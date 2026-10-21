@@ -3,6 +3,7 @@ import { Plus, Check, X, RotateCcw, Video } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { Modal, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
+import SessionLog from '../../components/SessionLog.jsx'
 import { addDays, daysBetween, fmtDate, fmtRelative, hm, isoDow, money, mondayOf, payState, sessionsLeft, toIso, ymd } from '../../lib/format.js'
 
 export default function Overview({ data, reload, go, trainerId }) {
@@ -12,7 +13,8 @@ export default function Overview({ data, reload, go, trainerId }) {
   const [sessions, setSessions] = useState([])
   const [plans, setPlans] = useState([])
   const [askFor, setAskFor] = useState(null)
-  const mobile = useIsMobile()   // session for the "what happened?" dialog
+  const mobile = useIsMobile()
+  const [logFor, setLogFor] = useState(null)   // session whose training log is open   // session for the "what happened?" dialog
   const today = ymd()
   const monday = mondayOf(today)
   const checkinClients = data.clients.filter((c) => c.active && c.mode !== 'gym' && c.checkin_weekday === isoDow(today))
@@ -66,7 +68,7 @@ export default function Overview({ data, reload, go, trainerId }) {
     return (
       <div className="acts">
         <button className="icon-btn" onClick={() => setAskFor(s)} aria-label={t('overview.didntHappen')} title={t('overview.didntHappen')}><X /></button>
-        <button className="icon-btn yes" onClick={() => setStatus(s, 'done')} aria-label={t('statuses.done')} title={t('statuses.done')}><Check /></button>
+        <button className="icon-btn yes" onClick={() => { setStatus(s, 'done'); setLogFor(s) }} aria-label={t('statuses.done')} title={t('statuses.done')}><Check /></button>
       </div>
     )
   }
@@ -113,7 +115,10 @@ export default function Overview({ data, reload, go, trainerId }) {
               {todays.map((s) => (
                 <div className={`row t today-row st-${s.status}`} key={s.id}>
                   <span className="time">{hm(new Date(s.starts_at))}</span>
-                  <div style={{ minWidth: 0 }}><div className="name">{s.client_id ? byId[s.client_id]?.name : (s.notes || t('kinds.own'))}</div>
+                  <div style={{ minWidth: 0 }}>
+                    {s.client_id
+                      ? <button className="name linkish" onClick={() => setLogFor(s)}>{byId[s.client_id]?.name}</button>
+                      : <div className="name">{s.notes || t('kinds.own')}</div>}
                     <div className="meta">{s.format === 'online' ? <span className="fmt"><Video />{t('formats.online')}</span> : t(`kinds.${s.kind}`)}{s.location ? ` · ${s.location}` : ''}</div></div>
                   <QuickActions s={s} />
                 </div>
@@ -126,7 +131,7 @@ export default function Overview({ data, reload, go, trainerId }) {
               <div className="list">
                 {past.map((s) => (
                   <div className="row" key={s.id}>
-                    <div><div className="name">{byId[s.client_id]?.name}</div><div className="meta">{fmtRelative(s.starts_at, locale)} · {t(`kinds.${s.kind}`)}</div></div>
+                    <div><button className="name linkish" onClick={() => setLogFor(s)}>{byId[s.client_id]?.name}</button><div className="meta">{fmtRelative(s.starts_at, locale)} · {t(`kinds.${s.kind}`)}</div></div>
                     <QuickActions s={s} />
                   </div>
                 ))}
@@ -193,6 +198,8 @@ export default function Overview({ data, reload, go, trainerId }) {
         </section>
       </div>
       {mobile && <div style={{ marginTop: 14 }}>{kpis}</div>}
+      <SessionLog session={logFor} clientName={logFor ? byId[logFor.client_id]?.name : ''} trainerId={trainerId}
+        onClose={() => setLogFor(null)} onSaved={() => setLogFor(null)} />
       <Modal open={!!askFor} title={t('overview.whatHappened')} onClose={() => setAskFor(null)}>
         {askFor && (
           <div className="grid" style={{ gap: 10 }}>

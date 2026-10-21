@@ -4,6 +4,7 @@ import { supabase } from '../../supabase.js'
 import { DICTS, LANGS, useI18n } from '../../i18n.jsx'
 import { Modal, copyText, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
 import { fmtDate, money, payState, sessionsLeft, weekdayName, ymd } from '../../lib/format.js'
+import { rowText } from '../../components/ExerciseRows.jsx'
 
 export default function Clients({ data, reload, trainerId }) {
   const { t, locale } = useI18n()
@@ -82,6 +83,14 @@ function ClientModal({ edit, onClose, data, trainerId, onSaved, onInvite }) {
   const run = useRun()
   const toast = useToast()
   const [f, setF] = useState(null)
+  const [history, setHistory] = useState(null)
+  useEffect(() => {
+    setHistory(null)
+    if (!edit || edit.isNew) return
+    supabase.from('sessions').select('id, starts_at, kind, status, exercise_rows(*)').eq('client_id', edit.id).in('status', ['done', 'no_show', 'late_cancel'])
+      .order('starts_at', { ascending: false }).limit(20)
+      .then(({ data }) => setHistory((data || []).filter((x) => x.exercise_rows?.length).slice(0, 8)))
+  }, [edit])
 
   useEffect(() => {
     if (!edit) return setF(null)
@@ -117,7 +126,7 @@ function ClientModal({ edit, onClose, data, trainerId, onSaved, onInvite }) {
   }
 
   return (
-    <Modal open={!!edit} title={edit.isNew ? t('clients.add') : t('clients.edit')} onClose={onClose}>
+    <Modal open={!!edit} wide={!edit.isNew} title={edit.isNew ? t('clients.add') : t('clients.edit')} onClose={onClose}>
       <form className="form" onSubmit={save}>
         <label className="f" htmlFor="c-name">{t('clients.name')}<input id="c-name" required value={f.name} onChange={set('name')} /></label>
         <label className="f" htmlFor="c-email">{t('clients.email')}<input id="c-email" type="email" required value={f.email} onChange={set('email')} /><small>{t('clients.emailHelp')}</small></label>
@@ -155,6 +164,21 @@ function ClientModal({ edit, onClose, data, trainerId, onSaved, onInvite }) {
         <label className="check-row" htmlFor="c-show"><input id="c-show" type="checkbox" checked={f.show_training} onChange={set('show_training')} />{t('clients.showTraining')}</label>
         <div className="meta" style={{ marginTop: -8 }}>{t('clients.showTrainingHelp')}</div>
         <label className="check-row" htmlFor="c-active"><input id="c-active" type="checkbox" checked={f.active} onChange={set('active')} />{t('clients.active')}</label>
+        {!edit.isNew && (
+          <div className="section">
+            <h2>{t('clients.history')}</h2>
+            {history === null ? null : history.length === 0 ? <div className="meta">{t('clients.noHistory')}</div> : (
+              <div className="log-list">
+                {history.map((s) => (
+                  <div key={s.id} className="log-item">
+                    <div className="name">{fmtDate(ymd(new Date(s.starts_at)), locale, { weekday: 'short', day: 'numeric', month: 'short' })} <span className="meta">· {t(`kinds.${s.kind}`)}</span></div>
+                    <ul>{s.exercise_rows.sort((a, b) => a.position - b.position).map((r) => <li key={r.id}>{r.exercise} · {rowText(r)}</li>)}</ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div className="modal-foot">
           {!edit.isNew && onInvite && <button type="button" className="btn ghost small" onClick={() => onInvite(edit)}>{t('clients.copyInvite')}</button>}
           <span className="spacer" />

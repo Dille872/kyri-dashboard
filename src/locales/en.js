@@ -63,6 +63,7 @@ export default {
     doneHint: 'Done, no-show and late cancellation count against the client’s pack.',
   },
   clients: {
+    history: 'Training history', noHistory: 'No logged sessions yet. Tap ✓ on the overview to log one.',
     mode: 'Training', checkin: 'Check-in day', checkinNone: 'No check-in', showTraining: 'Client sees their trainings in the app',
     showTrainingHelp: 'Exercises and kg. Your private notes always stay hidden.',
     title: 'Clients', subtitle: '{n} active · clients sign in with their email', add: 'Add client', edit: 'Edit client',
@@ -121,4 +122,5 @@ export default {
     deleteWorkout: 'Delete workout', confirmDelete: 'Delete for good?', history: 'Gym training log', noHistory: 'No logged gym sessions yet.',
     checkin: 'Check-in: {day}', noCheckin: 'No check-in day set',
   },
+  log: { title: 'Training log', prefilled: 'Filled in from last time ({date}). Just adjust the kg.', empty: 'Add the exercises you did.', skip: 'Skip', save: 'Save log', saved: 'Log saved' },
 }

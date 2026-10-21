@@ -307,3 +307,8 @@ dialog.wide{width:min(760px,calc(100vw - 32px))}
   .row:has(.icon-btn) .acts{justify-content:flex-end;flex-wrap:nowrap}
   .today-row .pill{font-size:11px;padding:3px 8px}
 }
+.linkish{all:unset;cursor:pointer;font-weight:700;display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.linkish:hover{text-decoration:underline;text-underline-offset:3px}
+.linkish:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+.today-row.st-cancelled .linkish,.today-row.st-no_show .linkish,.today-row.st-late_cancel .linkish{text-decoration:line-through;color:var(--muted)}
+.today-row.st-done .linkish{color:var(--muted)}

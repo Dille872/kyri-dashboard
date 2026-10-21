@@ -63,6 +63,7 @@ export default {
     doneHint: 'Erledigt, nicht erschienen und kurzfristig abgesagt werden vom Paket abgezogen.',
   },
   clients: {
+    history: 'Trainingsverlauf', noHistory: 'Noch keine eingetragenen Einheiten. Tipp auf der Übersicht auf ✓, um eine einzutragen.',
     mode: 'Training', checkin: 'Check-in-Tag', checkinNone: 'Kein Check-in', showTraining: 'Klient sieht seine Trainings in der App',
     showTrainingHelp: 'Übungen und Kilos. Deine privaten Notizen bleiben immer verborgen.',
     title: 'Klienten', subtitle: '{n} aktiv · Klienten melden sich mit ihrer E-Mail an', add: 'Klient hinzufügen', edit: 'Klient bearbeiten',
@@ -121,4 +122,5 @@ export default {
     deleteWorkout: 'Training löschen', confirmDelete: 'Endgültig löschen?', history: 'Gym-Trainingslog', noHistory: 'Noch keine Gym-Einheiten eingetragen.',
     checkin: 'Check-in: {day}', noCheckin: 'Kein Check-in-Tag',
   },
+  log: { title: 'Trainingslog', prefilled: 'Vom letzten Mal übernommen ({date}). Einfach die Kilos anpassen.', empty: 'Trag die Übungen ein, die ihr gemacht habt.', skip: 'Überspringen', save: 'Log speichern', saved: 'Log gespeichert' },
 }
