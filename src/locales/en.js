@@ -8,7 +8,7 @@ export default {
   nav: {
     planning: 'Weekly planning',
     more: 'More',
-    programs: 'Programs',
+    programs: 'Online plans',
     overview: 'Overview', calendar: 'Calendar', clients: 'Clients', payments: 'Payments', settings: 'Settings',
     coachDashboard: 'Coach dashboard',
   },
@@ -115,7 +115,7 @@ export default {
   modes: { gym: 'Gym', online: 'Online', hybrid: 'Gym + Online' },
   formats: { gym: 'Gym', online: 'Online' },
   programs: {
-    title: 'Programs', subtitle: 'Weekly plans for online clients. Clients tick off workouts and enter the kg they used.',
+    title: 'Online plans', subtitle: 'Weekly plans for online clients. Clients tick off workouts and enter the kg they used.',
     client: 'Client', noOnline: 'No online clients yet. Set a client to “Online” or “Gym + Online”.',
     week: 'Week {n}', addWorkout: 'Add workout', workoutTitle: 'Workout name', newWorkout: 'Day A',
     notesForClient: 'Notes for the client', copyNext: 'Copy to next week', copied: '{n} workouts copied to next week',
@@ -138,4 +138,5 @@ export default {
     sessions: 'sessions in {weeks} weeks', attendance: 'attendance', record: 'New best: {kg} · {date}',
     cheer: '{exercise}: up {kg} in {weeks} weeks. Keep going!',
   },
+  profile: { upcoming: 'Upcoming sessions', addLog: 'Add log' },
 }

@@ -8,7 +8,7 @@ export default {
   nav: {
     planning: 'Wochenplanung',
     more: 'Mehr',
-    programs: 'Trainingspläne',
+    programs: 'Online-Pläne',
     overview: 'Übersicht', calendar: 'Kalender', clients: 'Klienten', payments: 'Zahlungen', settings: 'Einstellungen',
     coachDashboard: 'Trainer-Dashboard',
   },
@@ -115,7 +115,7 @@ export default {
   modes: { gym: 'Gym', online: 'Online', hybrid: 'Gym + Online' },
   formats: { gym: 'Gym', online: 'Online' },
   programs: {
-    title: 'Trainingspläne', subtitle: 'Wochenpläne für Online-Klienten. Klienten haken Trainings ab und tragen ihre Kilos ein.',
+    title: 'Online-Pläne', subtitle: 'Wochenpläne für Online-Klienten. Klienten haken Trainings ab und tragen ihre Kilos ein.',
     client: 'Klient', noOnline: 'Noch keine Online-Klienten. Stell einen Klienten auf „Online“ oder „Gym + Online“.',
     week: 'KW {n}', addWorkout: 'Training hinzufügen', workoutTitle: 'Name des Trainings', newWorkout: 'Tag A',
     notesForClient: 'Hinweise für den Klienten', copyNext: 'In nächste Woche kopieren', copied: '{n} Trainings in die nächste Woche kopiert',
@@ -138,4 +138,5 @@ export default {
     sessions: 'Einheiten in {weeks} Wochen', attendance: 'Anwesenheit', record: 'Neuer Rekord: {kg} · {date}',
     cheer: '{exercise}: +{kg} in {weeks} Wochen. Weiter so!',
   },
+  profile: { upcoming: 'Nächste Termine', addLog: 'Log eintragen' },
 }

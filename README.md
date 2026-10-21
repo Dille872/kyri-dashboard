@@ -1,4 +1,4 @@
-# Train with Kyri – Coach Dashboard (v1.3.0)
+# Train with Kyri – Coach Dashboard (v1.3.1)
 
 Web-App für Trainer und Klienten: Kalender, Klienten mit Paketen, Zahlungen (Revolut, Überweisung, Bar) und eine Client-App für das Handy. Sprachen: Englisch, Griechisch, Deutsch.
 
@@ -78,7 +78,7 @@ Das Logo liegt unter `public/logo.png` (und die App-Icons daneben). Wenn du die 
 - **Trainingslog:** ✓ auf der Übersicht oder Name antippen öffnet das Log, vorausgefüllt mit dem letzten Mal. Auch im Termin: Übungen mit Sätzen × Wdh. @ kg, „Letztes Mal“ als Vorlage, private Notiz nur für Kyri.
 - **Trainingspläne (Online):** Wochenplan pro Klient. Klient hakt ab und trägt seine Kilos ein. „In nächste Woche kopieren“ übernimmt die tatsächlichen Kilos. Check-in-Tag pro Klient erscheint in der Übersicht.
 - **Wochenplanung:** Plan für jede Einheit vorab schreiben (Wie letztes Mal, Vorlagen). Klienten sehen den Plan erst, wenn die Einheit erledigt ist. Im Training zeigt das Log den Plan grau an, Kyri trägt nur Abweichungen ein.
-- **Fortschritt:** beim Klienten und in der Client-App: Einheiten, Anwesenheit, Rekord, Steigerung pro Übung mit Mini-Kurve.
+- **Fortschritt:** Klienten → Name antippen öffnet das Profil (Fortschritt, nächste Termine mit Plan-Status, Trainingsverlauf). Auch und in der Client-App: Einheiten, Anwesenheit, Rekord, Steigerung pro Übung mit Mini-Kurve.
 - **Sichtbarkeit:** pro Klient abschaltbar; in den Einstellungen optional Sperre bei Überfälligkeit und Zeitfenster für die Historie.
 - **Handy:** Trainer-Bereich mit App-Leiste unten (Übersicht, Kalender, Klienten, Zahlungen, Mehr), Kalender als Tagesansicht, Fenster als Blatt von unten. Sprache unter „Mehr“.
 - **Sprachen:** Umschalter EN / ΕΛ / DE. Klienten starten in der Sprache, die Kyri beim Klienten eingestellt hat. Texte liegen in `src/locales/`.

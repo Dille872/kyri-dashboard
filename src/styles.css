@@ -350,3 +350,6 @@ dialog.wide{width:min(760px,calc(100vw - 32px))}
   .plan-head .chev{display:none}
   .prog-row .spark{width:70px}
 }
+
+/* v1.3.1: client profile */
+.hist-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}

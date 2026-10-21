@@ -8,7 +8,7 @@ export default {
   nav: {
     planning: 'Εβδομαδιαίος προγραμματισμός',
     more: 'Περισσότερα',
-    programs: 'Προγράμματα',
+    programs: 'Online πλάνα',
     overview: 'Επισκόπηση', calendar: 'Ημερολόγιο', clients: 'Πελάτες', payments: 'Πληρωμές', settings: 'Ρυθμίσεις',
     coachDashboard: 'Πίνακας προπονητή',
   },
@@ -115,7 +115,7 @@ export default {
   modes: { gym: 'Γυμναστήριο', online: 'Online', hybrid: 'Γυμναστήριο + Online' },
   formats: { gym: 'Γυμναστήριο', online: 'Online' },
   programs: {
-    title: 'Προγράμματα', subtitle: 'Εβδομαδιαία προγράμματα για online πελάτες. Οι πελάτες σημειώνουν τις προπονήσεις και γράφουν τα κιλά τους.',
+    title: 'Online πλάνα', subtitle: 'Εβδομαδιαία προγράμματα για online πελάτες. Οι πελάτες σημειώνουν τις προπονήσεις και γράφουν τα κιλά τους.',
     client: 'Πελάτης', noOnline: 'Δεν υπάρχουν online πελάτες ακόμα. Όρισε έναν πελάτη σε «Online» ή «Γυμναστήριο + Online».',
     week: 'Εβδομάδα {n}', addWorkout: 'Νέα προπόνηση', workoutTitle: 'Όνομα προπόνησης', newWorkout: 'Ημέρα Α',
     notesForClient: 'Οδηγίες για τον πελάτη', copyNext: 'Αντιγραφή στην επόμενη εβδομάδα', copied: '{n} προπονήσεις αντιγράφηκαν στην επόμενη εβδομάδα',
@@ -138,4 +138,5 @@ export default {
     sessions: 'προπονήσεις σε {weeks} εβδομάδες', attendance: 'παρουσία', record: 'Νέο ρεκόρ: {kg} · {date}',
     cheer: '{exercise}: +{kg} σε {weeks} εβδομάδες. Συνέχισε έτσι!',
   },
+  profile: { upcoming: 'Επόμενες προπονήσεις', addLog: 'Καταγραφή' },
 }
