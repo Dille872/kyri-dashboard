@@ -37,6 +37,8 @@ export default {
     overdue: 'Καθυστέρηση {n} ημερών', overdue1: 'Καθυστέρηση 1 ημέρας', dueOn: 'Λήξη {date}', nothing: 'Τίποτα προς πληρωμή',
   },
   overview: {
+    requests: 'Αιτήματα', wantsPack: 'Θέλει νέο πακέτο: {pack} ({price})', accept: 'Αποδοχή', decline: 'Απόρριψη',
+    renewalAccepted: '{name}: το πακέτο έγινε δεκτό, πληρωμή σήμερα', renewalDeclined: 'Το αίτημα απορρίφθηκε', cancelledSession: 'Ακύρωσε {when} στην εφαρμογή',
     planNext: 'Προγραμματισμός επόμενης εβδομάδας', openPlanning: 'Προγραμματισμός',
     whatHappened: 'Τι έγινε;', counted: 'Μετράει ως προπόνηση', notCounted: 'Δεν μετράει',
     undo: 'Αναίρεση', didntHappen: 'Δεν έγινε',
@@ -88,6 +90,8 @@ export default {
     confirmedToast: '{name}: επιβεβαιώθηκαν {amount}', rejectedToast: 'Ο/Η {name} θα δει «δεν ελήφθη ακόμα»', recordedToast: '{name}: καταχωρήθηκαν {amount}',
   },
   settings: {
+    phone: 'Αριθμός WhatsApp', phoneHelp: 'Οι πελάτες βλέπουν κουμπί «Μήνυμα στο WhatsApp».', cancelHours: 'Δωρεάν ακύρωση έως … ώρες πριν',
+    cancelHelp: 'Οι μεταγενέστερες ακυρώσεις μετράνε ως προπόνηση.',
     protection: 'Πρόσβαση πελατών στις προπονήσεις', lockDays: 'Απόκρυψη προπονήσεων όταν μια πληρωμή καθυστερεί πάνω από … ημέρες',
     lockHelp: 'Κενό = ποτέ απόκρυψη', historyWeeks: 'Οι πελάτες βλέπουν προπονήσεις των τελευταίων … εβδομάδων', historyHelp: 'Κενό = όλες',
     title: 'Ρυθμίσεις', brand: 'Brand', brandName: 'Όνομα brand', ownerName: 'Το όνομά σου', tagline: 'Σλόγκαν',
@@ -97,6 +101,13 @@ export default {
     sessions: 'Προπονήσεις', sessionsHelp: 'Κενό = χωρίς όριο', appLink: 'Σύνδεσμος εφαρμογής πελατών', appLinkHelp: 'Στείλε αυτόν τον σύνδεσμο στους πελάτες σου.',
   },
   client: {
+    addCal: 'Προσθήκη στο ημερολόγιο', calApple: 'Ημερολόγιο Apple / Outlook', calGoogle: 'Google Calendar', cancel: 'Ακύρωση',
+    cancelTitle: 'Ακύρωση προπόνησης;', cancelFree: 'Πάνω από {hours} ώρες πριν: δωρεάν ακύρωση, δεν αφαιρείται από το πακέτο.',
+    cancelLate: 'Λιγότερο από {hours} ώρες πριν: η προπόνηση αφαιρείται από το πακέτο.', cancelConfirm: 'Ακύρωση προπόνησης',
+    cancelledFree: 'Ακυρώθηκε. Δεν αφαιρείται από το πακέτο.', cancelledLate: 'Ακυρώθηκε. Μετράει ως προπόνηση (τελευταίας στιγμής).',
+    writeTrainer: 'Μήνυμα στον {trainer} στο WhatsApp', renew: 'Νέο πακέτο', renewTitle: 'Κράτηση νέου πακέτου',
+    renewHelp: 'Διάλεξε πακέτο. Ο {trainer} το επιβεβαιώνει και μετά πληρώνεις εδώ όπως πάντα.', renewSend: 'Αποστολή αιτήματος',
+    renewSent: 'Το αίτημα στάλθηκε. Ο {trainer} θα το επιβεβαιώσει.', renewPending: 'Ζητήθηκε πακέτο. Ο {trainer} θα το επιβεβαιώσει.',
     plan: 'Το πλάνο σου αυτή την εβδομάδα', workoutsDone: '{done} από {total} ολοκληρώθηκαν', open: 'Άνοιγμα', markDone: 'Η προπόνηση ολοκληρώθηκε', done: 'Ολοκληρώθηκε',
     undo: 'Σήμανση ως μη ολοκληρωμένη', yourKg: 'Τα κιλά σου', yourReps: 'Οι επαναλήψεις σου', notePlaceholder: 'Πώς πήγε; (προαιρετικό)',
     save: 'Αποθήκευση', recent: 'Οι τελευταίες σου προπονήσεις', locked: 'Οι λεπτομέρειες των προπονήσεών σου είναι σε παύση μέχρι να τακτοποιηθεί η πληρωμή.',

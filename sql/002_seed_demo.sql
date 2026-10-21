@@ -1,7 +1,7 @@
 -- ============================================================
 -- Demo data (fake clients) for building and showing the app.
 --
--- 1. Run 001, 003, 004 and 005 first.
+-- 1. Run 001, 003, 004, 005 and 006 first.
 -- 2. Check the email in the LAST line (that person becomes the trainer admin), then run this file.
 --
 -- The six demo clients get "plus" aliases of that email (you+elena@…).
@@ -54,6 +54,7 @@ begin
           'Kyriakos Nicolaou', 'CY17 0020 0128 0000 0012 0052 7600', 'BANKCY2N',
           'https://revolut.me/your-handle', 'en')
   returning id into t;
+  update trainers set phone = '+357 99 000000', cancel_hours = 24 where id = t;
 
   insert into trainer_members (trainer_id, email) values (t, lower(admin_email));
 
@@ -203,6 +204,12 @@ begin
       (t, c4, w_id, 2, 'Dumbbell row',   3, '10', '20', case when i = 0 then '10' end, case when i = 0 then '22' end, i = 0),
       (t, c4, w_id, 3, 'Overhead press', 3, '8',  '25', case when i = 0 then '7' end, case when i = 0 then '25' end, i = 0);
   end loop;
+
+  -- ---------- Client actions: a cancellation from the app and a pack request ----------
+  update sessions set status = 'cancelled', cancelled_by = 'client', cancelled_at = now() - interval '2 hours'
+   where client_id = c5 and status = 'planned' and starts_at between (wk + 5)::timestamp and (wk + 6)::timestamp;
+  insert into renewal_requests (trainer_id, client_id, package_id, created_at)
+  values (t, c6, p2w, now() - interval '3 hours');
 
   -- ---------- Payments ----------
   insert into payments (trainer_id, client_id, amount, method, status, paid_on, decided_at, reference) values

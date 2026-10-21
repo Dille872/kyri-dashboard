@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Clock, Copy, LogOut, Video, ChevronRight, Lock } from 'lucide-react'
+import { Check, Clock, Copy, LogOut, Video, ChevronRight, Lock, CalendarPlus, X, MessageCircle, PackagePlus } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
-import { LangSwitch, Logo, Spinner, copyText, useRun, useToast } from '../../components/ui.jsx'
+import { LangSwitch, Logo, Modal, Spinner, copyText, useRun, useToast } from '../../components/ui.jsx'
+import { calendarEvent, downloadIcs, googleCalendarUrl, whatsappUrl } from '../../lib/calendar.js'
 import { fmtDate, fmtDateTime, money, mondayOf, payState, sessionsLeft, ymd } from '../../lib/format.js'
 import { rowText } from '../../components/ExerciseRows.jsx'
 import Progress from '../../components/Progress.jsx'
@@ -16,10 +17,14 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
   const [screen, setScreen] = useState('home')   // home | pay | sent | workout
   const [openWorkout, setOpenWorkout] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [cancelFor, setCancelFor] = useState(null)    // session to cancel
+  const [calFor, setCalFor] = useState(null)          // session to add to calendar
+  const [renewOpen, setRenewOpen] = useState(false)
+  const [pickPkg, setPickPkg] = useState(null)
 
   const load = useCallback(async () => {
     const monday = mondayOf(ymd())
-    const [tr, cl, se, pa, st, pw, lg] = await Promise.all([
+    const [tr, cl, se, pa, st, pw, lg, pk, rn] = await Promise.all([
       run(supabase.from('trainers').select('*').eq('id', trainerId).single()),
       run(supabase.from('clients').select('*').eq('id', clientId).single()),
       run(supabase.from('sessions').select('*').eq('client_id', clientId).eq('status', 'planned').gte('starts_at', new Date().toISOString()).order('starts_at').limit(5)),
@@ -27,10 +32,13 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
       run(supabase.rpc('my_training_status', { p_client: clientId })),
       run(supabase.from('plan_workouts').select('*, exercise_rows(*)').eq('client_id', clientId).eq('week_start', monday).order('position')),
       run(supabase.from('sessions').select('id, starts_at, kind, exercise_rows(*)').eq('client_id', clientId).eq('status', 'done').order('starts_at', { ascending: false }).limit(10)),
+      run(supabase.from('packages').select('*').eq('trainer_id', trainerId).eq('active', true).order('sort')),
+      run(supabase.from('renewal_requests').select('*').eq('client_id', clientId).order('created_at', { ascending: false }).limit(1)),
     ])
     const sortRows = (x) => ({ ...x, exercise_rows: (x.exercise_rows || []).sort((a, b) => a.position - b.position) })
     if (tr.ok && cl.ok) setD({ trainer: tr.data, client: cl.data, sessions: se.data || [], payments: pa.data || [],
-      training: st.data || 'off', plan: (pw.data || []).map(sortRows), recent: (lg.data || []).filter((x) => x.exercise_rows?.length).slice(0, 3).map(sortRows) })
+      training: st.data || 'off', plan: (pw.data || []).map(sortRows), recent: (lg.data || []).filter((x) => x.exercise_rows?.length).slice(0, 3).map(sortRows),
+      packages: pk.data || [], renewal: (rn.data || [])[0] || null })
   }, [clientId, trainerId, run])
   useEffect(() => { load() }, [load])
 
@@ -44,7 +52,24 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
   }, [d?.client?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!d) return <Spinner />
-  const { trainer, client, sessions, payments, training, plan, recent } = d
+  const { trainer, client, sessions, payments, training, plan, recent, packages, renewal } = d
+  const wa = whatsappUrl(trainer.phone)
+  const cancelHours = trainer.cancel_hours ?? 24
+  const isLate = (s) => new Date(s.starts_at).getTime() - Date.now() < cancelHours * 3600000
+  const placeOf = (s) => (s.format === 'online' ? (s.meeting_url || t('formats.online')) : s.location || '')
+  async function cancelSession() {
+    setBusy(true)
+    const r = await run(supabase.rpc('client_cancel_session', { p_session: cancelFor.id }))
+    setBusy(false)
+    if (r.ok) { toast(r.data === 'late_cancel' ? t('client.cancelledLate') : t('client.cancelledFree')); setCancelFor(null); load() }
+  }
+  async function requestRenewal() {
+    if (!pickPkg) return
+    setBusy(true)
+    const r = await run(supabase.rpc('request_renewal', { p_client: client.id, p_package: pickPkg }))
+    setBusy(false)
+    if (r.ok) { toast(t('client.renewSent', { trainer: (trainer.owner_name || trainer.brand_name).split(' ')[0] })); setRenewOpen(false); load() }
+  }
   const trainerName = (trainer.owner_name || trainer.brand_name).split(' ')[0]
   const first = client.name.split(' ')[0]
   const pending = payments.find((p) => p.status === 'reported')
@@ -122,16 +147,30 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
             <div className="meta">{sessions[0].format === 'online' ? t('formats.online') : t(`kinds.${sessions[0].kind}`)}{sessions[0].location ? ` · ${sessions[0].location}` : ''}</div>
             {sessions[0].format === 'online' && sessions[0].meeting_url && (
               <a className="btn block" style={{ marginTop: 12 }} href={sessions[0].meeting_url} target="_blank" rel="noopener noreferrer"><Video />{t('client.joinCall')}</a>
-            )}</>
+            )}
+            <div className="acts" style={{ justifyContent: 'flex-start', marginTop: 12 }}>
+              <button className="chip" onClick={() => setCalFor(sessions[0])}><CalendarPlus size={13} style={{ verticalAlign: '-2px' }} /> {t('client.addCal')}</button>
+              <button className="chip" onClick={() => setCancelFor(sessions[0])}><X size={13} style={{ verticalAlign: '-2px' }} /> {t('client.cancel')}</button>
+            </div></>
         ) : <div className="meta" style={{ marginTop: 6 }}>{t('client.noSession')}</div>}
         {sessions.length > 1 && (
           <div className="list" style={{ marginTop: 10 }}>
             {sessions.slice(1).map((s) => (
-              <div className="row" key={s.id} style={{ padding: '9px 0' }}><span>{fmtDateTime(s.starts_at, locale)}</span><span className="meta">{s.format === 'online' ? t('formats.online') : t(`kinds.${s.kind}`)}</span></div>
+              <div className="row" key={s.id} style={{ padding: '9px 0' }}>
+                <div><div>{fmtDateTime(s.starts_at, locale)}</div><div className="meta">{s.format === 'online' ? t('formats.online') : t(`kinds.${s.kind}`)}</div></div>
+                <div className="acts" style={{ flexWrap: 'nowrap' }}>
+                  <button className="icon-btn" style={{ width: 34, height: 34 }} onClick={() => setCalFor(s)} aria-label={t('client.addCal')} title={t('client.addCal')}><CalendarPlus /></button>
+                  <button className="icon-btn" style={{ width: 34, height: 34 }} onClick={() => setCancelFor(s)} aria-label={t('client.cancel')} title={t('client.cancel')}><X /></button>
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      {wa && (
+        <a className="btn block ghost" href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle />{t('client.writeTrainer', { trainer: trainerName })}</a>
+      )}
 
       {training === 'locked' && (
         <div className="card" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><Lock size={18} style={{ flex: 'none', marginTop: 2 }} /><div className="meta">{t('client.locked')}</div></div>
@@ -179,6 +218,11 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
           <><div className="big">{t('client.left', { left, total: client.sessions_total })}</div>
             <div className="bar full"><i style={{ width: `${Math.min(100, (left / Math.max(client.sessions_total, 1)) * 100)}%` }} /></div></>
         )}
+        {renewal?.status === 'pending' ? (
+          <div className="pill info" style={{ marginTop: 12 }}>{t('client.renewPending', { trainer: trainerName })}</div>
+        ) : left != null && left <= 2 && packages.length > 0 ? (
+          <button className="btn block" style={{ marginTop: 12 }} onClick={() => { setPickPkg(client.package_id || packages[0].id); setRenewOpen(true) }}><PackagePlus />{t('client.renew')}</button>
+        ) : null}
       </div>
 
       <div className="card">
@@ -210,6 +254,54 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
         </div>
       )}
       <p className="meta center">{t('client.installHint')}</p>
+
+      <Modal open={!!cancelFor} title={t('client.cancelTitle')} onClose={() => setCancelFor(null)}>
+        {cancelFor && (
+          <div className="form">
+            <div className="big">{fmtDateTime(cancelFor.starts_at, locale)}</div>
+            {isLate(cancelFor)
+              ? <div className="notice warn-box">{t('client.cancelLate', { hours: cancelHours })}</div>
+              : <div className="notice">{t('client.cancelFree', { hours: cancelHours })}</div>}
+            <div className="modal-foot">
+              <button className="btn ghost" onClick={() => setCancelFor(null)}>{t('common.back')}</button>
+              <button className="btn" disabled={busy} onClick={cancelSession}>{t('client.cancelConfirm')}</button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal open={!!calFor} title={t('client.addCal')} onClose={() => setCalFor(null)}>
+        {calFor && (() => {
+          const ev = calendarEvent(calFor, `${trainer.brand_name} · ${t(`kinds.${calFor.kind}`)}`, placeOf(calFor))
+          return (
+            <div className="grid" style={{ gap: 10 }}>
+              <div className="meta">{fmtDateTime(calFor.starts_at, locale)}</div>
+              <button className="choice" onClick={() => { downloadIcs(ev, calFor.id); setCalFor(null) }}><b>{t('client.calApple')}</b><CalendarPlus size={18} /></button>
+              <a className="choice" href={googleCalendarUrl(ev)} target="_blank" rel="noopener noreferrer" onClick={() => setCalFor(null)}><b>{t('client.calGoogle')}</b><CalendarPlus size={18} /></a>
+            </div>
+          )
+        })()}
+      </Modal>
+
+      <Modal open={renewOpen} title={t('client.renewTitle')} onClose={() => setRenewOpen(false)}>
+        {renewOpen && (
+          <div className="form">
+            <div className="meta">{t('client.renewHelp', { trainer: trainerName })}</div>
+            <div className="grid" style={{ gap: 8 }}>
+              {packages.map((p) => (
+                <button key={p.id} className="choice" aria-pressed={pickPkg === p.id} onClick={() => setPickPkg(p.id)}>
+                  <span><b>{p.name}</b><span className="meta" style={{ display: 'block' }}>{p.sessions ? `${p.sessions} ${t('common.sessions')} · ` : ''}{t(`billing.${p.billing}`)}</span></span>
+                  <span className="num">{money(p.price, locale)}</span>
+                </button>
+              ))}
+            </div>
+            <div className="modal-foot">
+              <button className="btn ghost" onClick={() => setRenewOpen(false)}>{t('common.cancel')}</button>
+              <button className="btn" disabled={busy || !pickPkg} onClick={requestRenewal}>{t('client.renewSend')}</button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

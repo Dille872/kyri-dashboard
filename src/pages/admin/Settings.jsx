@@ -4,8 +4,8 @@ import { supabase } from '../../supabase.js'
 import { LANGS, useI18n } from '../../i18n.jsx'
 import { copyText, useRun, useToast } from '../../components/ui.jsx'
 
-const FIELDS = ['brand_name', 'owner_name', 'tagline', 'account_name', 'iban', 'bic', 'revolut_url', 'default_lang', 'lock_overdue_days', 'client_history_weeks']
-const NUMBERS = ['lock_overdue_days', 'client_history_weeks']
+const FIELDS = ['brand_name', 'owner_name', 'tagline', 'account_name', 'iban', 'bic', 'revolut_url', 'default_lang', 'lock_overdue_days', 'client_history_weeks', 'phone', 'cancel_hours']
+const NUMBERS = ['lock_overdue_days', 'client_history_weeks', 'cancel_hours']
 
 export default function Settings({ data, reload, trainerId }) {
   const { t } = useI18n()
@@ -21,6 +21,7 @@ export default function Settings({ data, reload, trainerId }) {
     const row = Object.fromEntries(FIELDS.map((k) => [k, f[k] === '' ? null : NUMBERS.includes(k) ? Math.max(0, parseInt(f[k], 10) || 0) : f[k]]))
     row.brand_name = row.brand_name || data.trainer.brand_name
     row.default_lang = row.default_lang || 'en'
+    if (row.cancel_hours == null) row.cancel_hours = 24
     const r = await run(supabase.from('trainers').update(row).eq('id', trainerId))
     if (r.ok) { toast(t('common.saved')); reload() }
   }
@@ -50,6 +51,10 @@ export default function Settings({ data, reload, trainerId }) {
           <div className="row2">
             <label className="f" htmlFor="t-owner">{t('settings.ownerName')}<input id="t-owner" value={f.owner_name} onChange={set('owner_name')} /></label>
             <label className="f" htmlFor="t-tag">{t('settings.tagline')}<input id="t-tag" value={f.tagline} onChange={set('tagline')} /></label>
+          </div>
+          <div className="row2">
+            <label className="f" htmlFor="t-phone">{t('settings.phone')}<input id="t-phone" type="tel" value={f.phone} onChange={set('phone')} placeholder="+357 99 123456" /><small>{t('settings.phoneHelp')}</small></label>
+            <label className="f" htmlFor="t-cancel">{t('settings.cancelHours')}<input id="t-cancel" type="number" min="0" max="168" value={f.cancel_hours} onChange={set('cancel_hours')} /><small>{t('settings.cancelHelp')}</small></label>
           </div>
           <label className="f" htmlFor="t-lang">{t('settings.defaultLang')}
             <select id="t-lang" value={f.default_lang} onChange={set('default_lang')}>{LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}</select></label>

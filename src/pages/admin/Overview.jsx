@@ -15,7 +15,8 @@ export default function Overview({ data, reload, go, trainerId }) {
   const [askFor, setAskFor] = useState(null)
   const mobile = useIsMobile()
   const [logFor, setLogFor] = useState(null)   // session whose training log is open
-  const [nextWeek, setNextWeek] = useState(null)   // session for the "what happened?" dialog
+  const [nextWeek, setNextWeek] = useState(null)
+  const [clientCancels, setClientCancels] = useState([])   // session for the "what happened?" dialog
   const today = ymd()
   const monday = mondayOf(today)
   const checkinClients = data.clients.filter((c) => c.active && c.mode !== 'gym' && c.checkin_weekday === isoDow(today))
@@ -28,6 +29,9 @@ export default function Overview({ data, reload, go, trainerId }) {
     const nw = await run(supabase.from('sessions').select('id, exercise_rows(id)').eq('trainer_id', trainerId).not('client_id', 'is', null).eq('status', 'planned')
       .gte('starts_at', toIso(addDays(monday, 7), '00:00')).lt('starts_at', toIso(addDays(monday, 14), '00:00')))
     if (nw.ok) setNextWeek({ total: nw.data.length, planned: nw.data.filter((x) => x.exercise_rows?.length).length })
+    const cc = await run(supabase.from('sessions').select('*').eq('trainer_id', trainerId).eq('cancelled_by', 'client')
+      .gte('cancelled_at', new Date(Date.now() - 3 * 864e5).toISOString()).order('cancelled_at', { ascending: false }))
+    if (cc.ok) setClientCancels(cc.data)
     if (checkinClients.length) {
       const p = await run(supabase.from('plan_workouts').select('client_id, completed_at').in('client_id', checkinClients.map((c) => c.id)).eq('week_start', monday))
       if (p.ok) setPlans(p.data)
@@ -75,6 +79,10 @@ export default function Overview({ data, reload, go, trainerId }) {
         <button className="icon-btn yes" onClick={() => { setStatus(s, 'done'); setLogFor(s) }} aria-label={t('statuses.done')} title={t('statuses.done')}><Check /></button>
       </div>
     )
+  }
+  async function decideRenewal(r, accept) {
+    const res = await run(supabase.rpc('decide_renewal', { p_request: r.id, p_accept: accept }))
+    if (res.ok) { toast(accept ? t('overview.renewalAccepted', { name: byId[r.client_id]?.name }) : t('overview.renewalDeclined')); reload() }
   }
   async function decide(p, confirm) {
     const r = await run(supabase.rpc('decide_payment', { p_payment: p.id, p_confirm: confirm }))
@@ -155,6 +163,31 @@ export default function Overview({ data, reload, go, trainerId }) {
         </div>
 
         <section className="panel" style={{ alignSelf: 'start' }}>
+          {(data.renewals?.length > 0 || clientCancels.length > 0) && (
+            <>
+              <div className="panel-h"><h2>{t('overview.requests')}</h2><span className="pill info">{(data.renewals?.length || 0) + clientCancels.length}</span></div>
+              <div className="list" style={{ marginBottom: 18 }}>
+                {(data.renewals || []).map((r) => {
+                  const pk = data.packages.find((x) => x.id === r.package_id)
+                  return (
+                    <div className="row" key={r.id}>
+                      <div><div className="name">{byId[r.client_id]?.name}</div>
+                        <div className="meta">{t('overview.wantsPack', { pack: pk?.name || '', price: money(pk?.price || 0, locale) })} · {fmtRelative(r.created_at, locale)}</div></div>
+                      <div className="acts"><button className="chip" onClick={() => decideRenewal(r, false)}>{t('overview.decline')}</button>
+                        <button className="chip solid" onClick={() => decideRenewal(r, true)}>{t('overview.accept')}</button></div>
+                    </div>
+                  )
+                })}
+                {clientCancels.map((s) => (
+                  <div className="row" key={s.id}>
+                    <div><div className="name">{byId[s.client_id]?.name}</div>
+                      <div className="meta">{t('overview.cancelledSession', { when: `${fmtDate(ymd(new Date(s.starts_at)), locale, { weekday: 'short', day: 'numeric', month: 'short' })} ${hm(new Date(s.starts_at))}` })} · {fmtRelative(s.cancelled_at, locale)}</div></div>
+                    <span className={`pill ${s.status === 'late_cancel' ? 'warn' : 'mute'}`}>{s.status === 'late_cancel' ? t('overview.counted') : t('overview.notCounted')}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
           {checkinClients.length > 0 && (
             <>
               <div className="panel-h"><h2>{t('overview.checkins')}</h2><span className="pill info">{checkinClients.length}</span></div>

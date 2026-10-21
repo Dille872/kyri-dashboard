@@ -37,6 +37,8 @@ export default {
     overdue: '{n} days overdue', overdue1: '1 day overdue', dueOn: 'Due {date}', nothing: 'Nothing due',
   },
   overview: {
+    requests: 'Requests', wantsPack: 'Wants a new pack: {pack} ({price})', accept: 'Accept', decline: 'Decline',
+    renewalAccepted: '{name}: pack accepted, payment due today', renewalDeclined: 'Request declined', cancelledSession: 'Cancelled {when} in the app',
     planNext: 'Plan next week', openPlanning: 'Plan now',
     whatHappened: 'What happened?', counted: 'Counts as a session', notCounted: 'Doesn’t count',
     undo: 'Undo', didntHappen: 'Didn’t happen',
@@ -88,6 +90,8 @@ export default {
     confirmedToast: '{name}: {amount} confirmed', rejectedToast: '{name} will see “not received yet”', recordedToast: '{name}: {amount} recorded',
   },
   settings: {
+    phone: 'WhatsApp number', phoneHelp: 'Clients get a “Message on WhatsApp” button.', cancelHours: 'Free cancellation until … hours before',
+    cancelHelp: 'Later cancellations count as a session.',
     protection: 'Client access to trainings', lockDays: 'Hide trainings when a payment is more than … days overdue',
     lockHelp: 'Empty = never hide', historyWeeks: 'Clients see trainings from the last … weeks', historyHelp: 'Empty = everything',
     title: 'Settings', brand: 'Brand', brandName: 'Brand name', ownerName: 'Your name', tagline: 'Tagline',
@@ -97,6 +101,13 @@ export default {
     sessions: 'Sessions', sessionsHelp: 'Empty = no limit', appLink: 'Client app link', appLinkHelp: 'Send this link to your clients.',
   },
   client: {
+    addCal: 'Add to calendar', calApple: 'Apple / Outlook calendar', calGoogle: 'Google Calendar', cancel: 'Cancel',
+    cancelTitle: 'Cancel this session?', cancelFree: 'More than {hours} hours before: free cancellation, it won’t count against your pack.',
+    cancelLate: 'Less than {hours} hours before: this counts as a session from your pack.', cancelConfirm: 'Cancel session',
+    cancelledFree: 'Cancelled. It doesn’t count against your pack.', cancelledLate: 'Cancelled. It counts as a session (late cancellation).',
+    writeTrainer: 'Message {trainer} on WhatsApp', renew: 'Book a new pack', renewTitle: 'Book a new pack',
+    renewHelp: 'Choose a pack. {trainer} confirms it, then you can pay here as usual.', renewSend: 'Send request',
+    renewSent: 'Request sent. {trainer} will confirm it.', renewPending: 'Pack requested. {trainer} will confirm it.',
     plan: 'Your plan this week', workoutsDone: '{done} of {total} done', open: 'Open', markDone: 'Workout done', done: 'Done',
     undo: 'Mark as not done', yourKg: 'Your kg', yourReps: 'Your reps', notePlaceholder: 'How did it go? (optional)',
     save: 'Save', recent: 'Your recent trainings', locked: 'Your training details are paused until the open payment is settled.',

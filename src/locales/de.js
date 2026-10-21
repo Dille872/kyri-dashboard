@@ -37,6 +37,8 @@ export default {
     overdue: '{n} Tage überfällig', overdue1: '1 Tag überfällig', dueOn: 'Fällig am {date}', nothing: 'Nichts fällig',
   },
   overview: {
+    requests: 'Anfragen', wantsPack: 'Möchte ein neues Paket: {pack} ({price})', accept: 'Annehmen', decline: 'Ablehnen',
+    renewalAccepted: '{name}: Paket angenommen, Zahlung heute fällig', renewalDeclined: 'Anfrage abgelehnt', cancelledSession: 'Hat {when} in der App abgesagt',
     planNext: 'Nächste Woche planen', openPlanning: 'Jetzt planen',
     whatHappened: 'Was ist passiert?', counted: 'Zählt als Einheit', notCounted: 'Zählt nicht',
     undo: 'Rückgängig', didntHappen: 'Hat nicht stattgefunden',
@@ -88,6 +90,8 @@ export default {
     confirmedToast: '{name}: {amount} bestätigt', rejectedToast: '{name} sieht „noch nicht erhalten“', recordedToast: '{name}: {amount} eingetragen',
   },
   settings: {
+    phone: 'WhatsApp-Nummer', phoneHelp: 'Klienten bekommen einen Button „Auf WhatsApp schreiben“.', cancelHours: 'Kostenlos absagen bis … Stunden vorher',
+    cancelHelp: 'Spätere Absagen zählen als Einheit.',
     protection: 'Zugriff der Klienten auf Trainings', lockDays: 'Trainings ausblenden, wenn eine Zahlung mehr als … Tage überfällig ist',
     lockHelp: 'Leer = nie ausblenden', historyWeeks: 'Klienten sehen Trainings der letzten … Wochen', historyHelp: 'Leer = alles',
     title: 'Einstellungen', brand: 'Marke', brandName: 'Markenname', ownerName: 'Dein Name', tagline: 'Slogan',
@@ -97,6 +101,13 @@ export default {
     sessions: 'Einheiten', sessionsHelp: 'Leer = unbegrenzt', appLink: 'Link zur Klienten-App', appLinkHelp: 'Diesen Link schickst du deinen Klienten.',
   },
   client: {
+    addCal: 'In Kalender eintragen', calApple: 'Apple- / Outlook-Kalender', calGoogle: 'Google Kalender', cancel: 'Absagen',
+    cancelTitle: 'Termin absagen?', cancelFree: 'Mehr als {hours} Stunden vorher: kostenlos, wird nicht vom Paket abgezogen.',
+    cancelLate: 'Weniger als {hours} Stunden vorher: Die Einheit wird vom Paket abgezogen.', cancelConfirm: 'Termin absagen',
+    cancelledFree: 'Abgesagt. Wird nicht vom Paket abgezogen.', cancelledLate: 'Abgesagt. Zählt als Einheit (kurzfristig).',
+    writeTrainer: '{trainer} auf WhatsApp schreiben', renew: 'Neues Paket buchen', renewTitle: 'Neues Paket buchen',
+    renewHelp: 'Wähl ein Paket. {trainer} bestätigt es, dann bezahlst du wie gewohnt hier.', renewSend: 'Anfrage senden',
+    renewSent: 'Anfrage gesendet. {trainer} bestätigt sie.', renewPending: 'Paket angefragt. {trainer} bestätigt es.',
     plan: 'Dein Plan diese Woche', workoutsDone: '{done} von {total} erledigt', open: 'Öffnen', markDone: 'Training erledigt', done: 'Erledigt',
     undo: 'Als nicht erledigt markieren', yourKg: 'Deine kg', yourReps: 'Deine Wdh.', notePlaceholder: 'Wie lief es? (optional)',
     save: 'Speichern', recent: 'Deine letzten Trainings', locked: 'Deine Trainingsdetails sind pausiert, bis die offene Zahlung erledigt ist.',

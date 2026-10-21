@@ -30,13 +30,14 @@ export default function AdminApp({ trainerId, user, signOut }) {
   const [data, setData] = useState(null)
 
   const reload = useCallback(async () => {
-    const [tr, pk, cl, pend] = await Promise.all([
+    const [tr, pk, cl, pend, ren] = await Promise.all([
       run(supabase.from('trainers').select('*').eq('id', trainerId).single()),
       run(supabase.from('packages').select('*').eq('trainer_id', trainerId).order('sort').order('name')),
       run(supabase.from('clients').select('*').eq('trainer_id', trainerId).order('name')),
       run(supabase.from('payments').select('*').eq('trainer_id', trainerId).eq('status', 'reported').order('reported_at', { ascending: false })),
+      run(supabase.from('renewal_requests').select('*').eq('trainer_id', trainerId).eq('status', 'pending').order('created_at')),
     ])
-    if (tr.ok) setData({ trainer: tr.data, packages: pk.data || [], clients: cl.data || [], pending: pend.data || [] })
+    if (tr.ok) setData({ trainer: tr.data, packages: pk.data || [], clients: cl.data || [], pending: pend.data || [], renewals: ren.data || [] })
   }, [trainerId, run])
 
   useEffect(() => { reload() }, [reload])
