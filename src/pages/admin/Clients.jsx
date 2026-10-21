@@ -5,6 +5,7 @@ import { DICTS, LANGS, useI18n } from '../../i18n.jsx'
 import { Modal, copyText, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
 import { fmtDate, money, payState, sessionsLeft, weekdayName, ymd } from '../../lib/format.js'
 import { rowText } from '../../components/ExerciseRows.jsx'
+import Progress from '../../components/Progress.jsx'
 
 export default function Clients({ data, reload, trainerId }) {
   const { t, locale } = useI18n()
@@ -128,6 +129,12 @@ function ClientModal({ edit, onClose, data, trainerId, onSaved, onInvite }) {
   return (
     <Modal open={!!edit} wide={!edit.isNew} title={edit.isNew ? t('clients.add') : t('clients.edit')} onClose={onClose}>
       <form className="form" onSubmit={save}>
+        {!edit.isNew && (
+          <div className="grid" style={{ gap: 10, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
+            <h2>{t('progress.title')}</h2>
+            <Progress clientId={edit.id} />
+          </div>
+        )}
         <label className="f" htmlFor="c-name">{t('clients.name')}<input id="c-name" required value={f.name} onChange={set('name')} /></label>
         <label className="f" htmlFor="c-email">{t('clients.email')}<input id="c-email" type="email" required value={f.email} onChange={set('email')} /><small>{t('clients.emailHelp')}</small></label>
         <div className="row2">
@@ -172,7 +179,7 @@ function ClientModal({ edit, onClose, data, trainerId, onSaved, onInvite }) {
                 {history.map((s) => (
                   <div key={s.id} className="log-item">
                     <div className="name">{fmtDate(ymd(new Date(s.starts_at)), locale, { weekday: 'short', day: 'numeric', month: 'short' })} <span className="meta">· {t(`kinds.${s.kind}`)}</span></div>
-                    <ul>{s.exercise_rows.sort((a, b) => a.position - b.position).map((r) => <li key={r.id}>{r.exercise} · {rowText(r)}</li>)}</ul>
+                    <ul>{s.exercise_rows.sort((a, b) => a.position - b.position).map((r) => <li key={r.id}>{r.exercise} · {rowText(r, true)}</li>)}</ul>
                   </div>
                 ))}
               </div>

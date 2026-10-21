@@ -95,7 +95,7 @@ export default function Programs({ data, trainerId }) {
               {log.map((s) => (
                 <div key={s.id} className="log-item">
                   <div className="name">{fmtDate(ymd(new Date(s.starts_at)), locale, { weekday: 'short', day: 'numeric', month: 'short' })} <span className="meta">· {t(`kinds.${s.kind}`)}</span></div>
-                  <ul>{s.exercise_rows.sort((a, b) => a.position - b.position).map((r) => <li key={r.id}>{r.exercise} · {rowText(r)}</li>)}</ul>
+                  <ul>{s.exercise_rows.sort((a, b) => a.position - b.position).map((r) => <li key={r.id}>{r.exercise} · {rowText(r, true)}</li>)}</ul>
                 </div>
               ))}
             </div>

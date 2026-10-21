@@ -312,3 +312,41 @@ dialog.wide{width:min(760px,calc(100vw - 32px))}
 .linkish:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
 .today-row.st-cancelled .linkish,.today-row.st-no_show .linkish,.today-row.st-late_cancel .linkish{text-decoration:line-through;color:var(--muted)}
 .today-row.st-done .linkish{color:var(--muted)}
+
+/* v1.3.0: training log, weekly planning, progress */
+.lg{display:grid;gap:4px}
+.lg-row{display:grid;grid-template-columns:minmax(0,1fr) 76px 64px auto;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.lg-row.ex-head{border-top:0;padding:0}
+.lg-row input{padding:9px;font-size:15px}
+.lg-row input:not(.lg-name){text-align:center;font-family:var(--mono)}
+.lg-row input::placeholder{color:var(--muted);opacity:.8}
+.lg-name{font-weight:600}
+.lg-plan{font-size:12px;color:var(--muted);margin:3px 0 0 3px}
+.plan-progress b{font-weight:700}
+.plan-card{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.plan-card.has{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.plan-card.open{border-color:var(--ink)}
+.plan-head{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;grid-template-columns:52px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px 14px}
+.plan-head .chev{width:18px;height:18px;color:var(--muted);transition:transform .15s}
+.plan-card.open .plan-head .chev{transform:rotate(180deg)}
+.plan-head:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+.plan-body{padding:0 14px 14px;display:grid;gap:12px}
+.tpl-select{width:auto;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.prog{display:grid;gap:14px}
+.prog-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.prog-stat{display:flex;gap:10px;align-items:center;background:var(--raise);border-radius:10px;padding:10px 12px}
+.prog-stat svg{width:18px;height:18px;flex:none;color:var(--muted)}
+.prog-stat.rec svg{color:var(--warn)}
+.prog-stat b{display:block;font:700 16px/1.2 var(--display)}
+.prog-stat span{display:block;font-size:12px;color:var(--muted)}
+.prog-list{display:grid}
+.prog-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.prog-row:first-child{border-top:0}
+.spark{display:block}
+.prog-cheer{background:var(--ok-soft);color:var(--ok);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600}
+@media (max-width:480px){
+  .lg-row{grid-template-columns:minmax(0,1fr) 62px 52px auto}
+  .plan-head{grid-template-columns:44px minmax(0,1fr) auto;gap:10px}
+  .plan-head .chev{display:none}
+  .prog-row .spark{width:70px}
+}

@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n.jsx'
 import { LangSwitch, Logo, Spinner, copyText, useRun, useToast } from '../../components/ui.jsx'
 import { fmtDate, fmtDateTime, money, mondayOf, payState, sessionsLeft, ymd } from '../../lib/format.js'
 import { rowText } from '../../components/ExerciseRows.jsx'
+import Progress from '../../components/Progress.jsx'
 import { MethodTag } from '../admin/Payments.jsx'
 
 export default function ClientApp({ clientId, trainerId, signOut }) {
@@ -152,6 +153,12 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
           </div>
         </div>
       )}
+      {training === 'visible' && (
+        <div className="card">
+          <div className="lab" style={{ marginBottom: 10 }}>{t('progress.yours')}</div>
+          <Progress clientId={client.id} forClient />
+        </div>
+      )}
       {training === 'visible' && recent.length > 0 && (
         <div className="card">
           <div className="lab">{t('client.recent')}</div>
@@ -159,7 +166,7 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
             {recent.map((s) => (
               <div key={s.id} className="log-item">
                 <div className="name">{fmtDate(ymd(new Date(s.starts_at)), locale, { weekday: 'short', day: 'numeric', month: 'short' })}</div>
-                <ul>{s.exercise_rows.map((r) => <li key={r.id}>{r.exercise} · {rowText(r)}</li>)}</ul>
+                <ul>{s.exercise_rows.map((r) => <li key={r.id}>{r.exercise} · {rowText(r, true)}</li>)}</ul>
               </div>
             ))}
           </div>

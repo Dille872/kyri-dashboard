@@ -6,6 +6,7 @@ export default {
     sessions: 'Einheiten', minutes: 'Min.', optional: 'optional',
   },
   nav: {
+    planning: 'Wochenplanung',
     more: 'Mehr',
     programs: 'Trainingspläne',
     overview: 'Übersicht', calendar: 'Kalender', clients: 'Klienten', payments: 'Zahlungen', settings: 'Einstellungen',
@@ -36,6 +37,7 @@ export default {
     overdue: '{n} Tage überfällig', overdue1: '1 Tag überfällig', dueOn: 'Fällig am {date}', nothing: 'Nichts fällig',
   },
   overview: {
+    planNext: 'Nächste Woche planen', openPlanning: 'Jetzt planen',
     whatHappened: 'Was ist passiert?', counted: 'Zählt als Einheit', notCounted: 'Zählt nicht',
     undo: 'Rückgängig', didntHappen: 'Hat nicht stattgefunden',
     checkins: 'Check-ins heute', openPlan: 'Plan öffnen', weekDone: 'Diese Woche: {done} von {total} Trainings erledigt', noPlan: 'Noch kein Plan für diese Woche',
@@ -122,5 +124,18 @@ export default {
     deleteWorkout: 'Training löschen', confirmDelete: 'Endgültig löschen?', history: 'Gym-Trainingslog', noHistory: 'Noch keine Gym-Einheiten eingetragen.',
     checkin: 'Check-in: {day}', noCheckin: 'Kein Check-in-Tag',
   },
-  log: { title: 'Trainingslog', prefilled: 'Vom letzten Mal übernommen ({date}). Einfach die Kilos anpassen.', empty: 'Trag die Übungen ein, die ihr gemacht habt.', skip: 'Überspringen', save: 'Log speichern', saved: 'Log gespeichert' },
+  log: { fromPlan: 'Dein Plan für heute. Trag nur ein, was anders war. Leere Felder zählen wie geplant.', plan: 'Plan', hint: 'Grau = Plan oder letztes Mal. Leer lassen, wenn es so lief.', title: 'Trainingslog', prefilled: 'Vom letzten Mal übernommen ({date}). Einfach die Kilos anpassen.', empty: 'Trag die Übungen ein, die ihr gemacht habt.', skip: 'Überspringen', save: 'Log speichern', saved: 'Log gespeichert' },
+  planning: {
+    title: 'Wochenplanung', subtitle: 'Schreib den Plan für jede Einheit vorab. Klienten sehen ihn nicht. Im Training trägst du nur noch die Kilos ein.',
+    nextWeek: 'Nächste Woche', progress: '{done} von {total} Einheiten geplant', allDone: 'Alles geplant',
+    empty: 'Diese Woche keine Termine. Leg sie zuerst im Kalender an.', planned: 'Geplant', noPlan: 'Noch kein Plan',
+    likeLast: 'Wie letztes Mal', useTemplate: 'Vorlage einsetzen…', kgOptional: 'Sätze, Wiederholungen und Kilos sind freiwillig. Leer lassen, wenn du es am Tag entscheidest.',
+    saveTemplate: 'Als Vorlage speichern', templateName: 'Name der Vorlage', templateSaved: 'Vorlage gespeichert', savePlan: 'Plan speichern',
+    saved: 'Plan für {name} gespeichert', copiedLast: 'Vom {date} übernommen', templates: 'Vorlagen', noTemplates: 'Noch keine Vorlagen. Öffne eine Einheit und tipp auf „Als Vorlage speichern“.',
+  },
+  progress: {
+    title: 'Fortschritt', yours: 'Dein Fortschritt', none: 'Noch nicht genug eingetragene Einheiten.',
+    sessions: 'Einheiten in {weeks} Wochen', attendance: 'Anwesenheit', record: 'Neuer Rekord: {kg} · {date}',
+    cheer: '{exercise}: +{kg} in {weeks} Wochen. Weiter so!',
+  },
 }

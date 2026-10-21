@@ -6,6 +6,7 @@ export default {
     sessions: 'sessions', minutes: 'min', optional: 'optional',
   },
   nav: {
+    planning: 'Weekly planning',
     more: 'More',
     programs: 'Programs',
     overview: 'Overview', calendar: 'Calendar', clients: 'Clients', payments: 'Payments', settings: 'Settings',
@@ -36,6 +37,7 @@ export default {
     overdue: '{n} days overdue', overdue1: '1 day overdue', dueOn: 'Due {date}', nothing: 'Nothing due',
   },
   overview: {
+    planNext: 'Plan next week', openPlanning: 'Plan now',
     whatHappened: 'What happened?', counted: 'Counts as a session', notCounted: 'Doesn’t count',
     undo: 'Undo', didntHappen: 'Didn’t happen',
     checkins: 'Check-ins today', openPlan: 'Open plan', weekDone: 'This week: {done} of {total} workouts done', noPlan: 'No plan for this week yet',
@@ -122,5 +124,18 @@ export default {
     deleteWorkout: 'Delete workout', confirmDelete: 'Delete for good?', history: 'Gym training log', noHistory: 'No logged gym sessions yet.',
     checkin: 'Check-in: {day}', noCheckin: 'No check-in day set',
   },
-  log: { title: 'Training log', prefilled: 'Filled in from last time ({date}). Just adjust the kg.', empty: 'Add the exercises you did.', skip: 'Skip', save: 'Save log', saved: 'Log saved' },
+  log: { fromPlan: 'Your plan for today. Only type what was different, empty fields count as planned.', plan: 'Plan', hint: 'Grey = plan or last time. Leave empty if it went as planned.', title: 'Training log', prefilled: 'Filled in from last time ({date}). Just adjust the kg.', empty: 'Add the exercises you did.', skip: 'Skip', save: 'Save log', saved: 'Log saved' },
+  planning: {
+    title: 'Weekly planning', subtitle: 'Write the plan for each session ahead. Clients don’t see it. In the session you only enter the kg.',
+    nextWeek: 'Next week', progress: '{done} of {total} sessions planned', allDone: 'All planned',
+    empty: 'No sessions this week. Add them in the calendar first.', planned: 'Planned', noPlan: 'No plan yet',
+    likeLast: 'Like last time', useTemplate: 'Use template…', kgOptional: 'Sets, reps and kg are optional. Leave them empty to decide on the day.',
+    saveTemplate: 'Save as template', templateName: 'Template name', templateSaved: 'Template saved', savePlan: 'Save plan',
+    saved: 'Plan for {name} saved', copiedLast: 'Copied from {date}', templates: 'Templates', noTemplates: 'No templates yet. Open a session and tap “Save as template”.',
+  },
+  progress: {
+    title: 'Progress', yours: 'Your progress', none: 'Not enough logged sessions yet.',
+    sessions: 'sessions in {weeks} weeks', attendance: 'attendance', record: 'New best: {kg} · {date}',
+    cheer: '{exercise}: up {kg} in {weeks} weeks. Keep going!',
+  },
 }

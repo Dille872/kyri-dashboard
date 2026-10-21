@@ -291,12 +291,12 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved }) {
                 <div className="last">
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                     <b>{t('calendar.lastTime', { date: fmtDate(ymd(new Date(last.date)), locale) })}</b>
-                    {rows.length === 0 && <button type="button" className="chip" onClick={() => setRows(last.rows.map((r) => ({ ...fromDb(r), id: undefined, key: Math.random().toString(36).slice(2) })))}>{t('calendar.copyLast')}</button>}
+                    {rows.length === 0 && <button type="button" className="chip" onClick={() => setRows(last.rows.map((r) => ({ ...fromDb(r), kg: r.actual_kg || r.kg || '', reps: r.actual_reps || r.reps || '', actual_kg: null, actual_reps: null, done: false, id: undefined, key: Math.random().toString(36).slice(2) })))}>{t('calendar.copyLast')}</button>}
                   </div>
-                  <ul>{last.rows.map((r) => <li key={r.id}>{r.exercise} · {rowText(r)}</li>)}</ul>
+                  <ul>{last.rows.map((r) => <li key={r.id}>{r.exercise} · {rowText(r, true)}</li>)}</ul>
                 </div>
               )}
-              <ExerciseRows rows={rows} setRows={setRows} idPrefix="sess" suggestions={suggest} />
+              <ExerciseRows rows={rows} setRows={setRows} showActual idPrefix="sess" suggestions={suggest} />
               <label className="f" htmlFor="s-private">{t('calendar.privateNote')}<textarea id="s-private" rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></label>
             </div>
           </>

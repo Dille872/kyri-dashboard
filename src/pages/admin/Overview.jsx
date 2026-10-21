@@ -14,7 +14,8 @@ export default function Overview({ data, reload, go, trainerId }) {
   const [plans, setPlans] = useState([])
   const [askFor, setAskFor] = useState(null)
   const mobile = useIsMobile()
-  const [logFor, setLogFor] = useState(null)   // session whose training log is open   // session for the "what happened?" dialog
+  const [logFor, setLogFor] = useState(null)   // session whose training log is open
+  const [nextWeek, setNextWeek] = useState(null)   // session for the "what happened?" dialog
   const today = ymd()
   const monday = mondayOf(today)
   const checkinClients = data.clients.filter((c) => c.active && c.mode !== 'gym' && c.checkin_weekday === isoDow(today))
@@ -24,6 +25,9 @@ export default function Overview({ data, reload, go, trainerId }) {
     const to = toIso(addDays(monday, 7), '00:00')
     const r = await run(supabase.from('sessions').select('*').eq('trainer_id', trainerId).gte('starts_at', from).lt('starts_at', to).order('starts_at'))
     if (r.ok) setSessions(r.data)
+    const nw = await run(supabase.from('sessions').select('id, exercise_rows(id)').eq('trainer_id', trainerId).not('client_id', 'is', null).eq('status', 'planned')
+      .gte('starts_at', toIso(addDays(monday, 7), '00:00')).lt('starts_at', toIso(addDays(monday, 14), '00:00')))
+    if (nw.ok) setNextWeek({ total: nw.data.length, planned: nw.data.filter((x) => x.exercise_rows?.length).length })
     if (checkinClients.length) {
       const p = await run(supabase.from('plan_workouts').select('client_id, completed_at').in('client_id', checkinClients.map((c) => c.id)).eq('week_start', monday))
       if (p.ok) setPlans(p.data)
@@ -125,6 +129,16 @@ export default function Overview({ data, reload, go, trainerId }) {
               ))}
             </div>
           </section>
+          {nextWeek && nextWeek.total > 0 && (
+            <section className="panel">
+              <div className="row" style={{ borderTop: 0, padding: 0 }}>
+                <div><div className="name">{t('overview.planNext')}</div>
+                  <div className="meta">{t('planning.progress', { done: nextWeek.planned, total: nextWeek.total })}</div>
+                  <div className="bar" style={{ width: 160 }}><i style={{ width: `${(nextWeek.planned / nextWeek.total) * 100}%` }} /></div></div>
+                <button className="chip solid" onClick={() => go('planning')}>{t('overview.openPlanning')}</button>
+              </div>
+            </section>
+          )}
           {past.length > 0 && (
             <section className="panel">
               <div className="panel-h"><h2>{t('overview.past')}</h2></div>

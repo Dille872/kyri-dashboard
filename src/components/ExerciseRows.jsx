@@ -40,14 +40,20 @@ export function ExerciseRows({ rows, setRows, showActual, idPrefix, suggestions 
 }
 
 // Writes the edited rows: updates existing, inserts new, deletes removed.
-export async function saveRows({ original, rows, base }) {
+export async function saveRows({ original, rows, base, actual = false }) {
   const clean = rows.filter((r) => r.exercise.trim())
   const keepIds = new Set(clean.filter((r) => r.id).map((r) => r.id))
   const removed = original.filter((r) => !keepIds.has(r.id)).map((r) => r.id)
   const toRow = (r, i) => ({
     ...base, position: i + 1, exercise: r.exercise.trim(),
     sets: r.sets === '' || r.sets == null ? null : parseInt(r.sets, 10) || null,
-    reps: r.reps === '' ? null : String(r.reps), kg: r.kg === '' ? null : String(r.kg),
+    reps: r.reps === '' || r.reps == null ? null : String(r.reps), kg: r.kg === '' || r.kg == null ? null : String(r.kg),
+    ...(actual ? {
+      // empty = done as planned
+      actual_kg: String(r.actual_kg ?? '').trim() || (r.kg == null ? null : String(r.kg)) || null,
+      actual_reps: String(r.actual_reps ?? '').trim() || (r.reps == null ? null : String(r.reps)) || null,
+      done: true,
+    } : {}),
   })
   const ops = []
   if (removed.length) ops.push(supabase.from('exercise_rows').delete().in('id', removed))
@@ -60,8 +66,20 @@ export async function saveRows({ original, rows, base }) {
   return err ? { error: err.error } : { error: null }
 }
 
-export function rowText(r) {
-  const parts = [r.sets && r.reps ? `${r.sets} × ${r.reps}` : r.reps || (r.sets ? `${r.sets}×` : '')]
-  if (r.kg) parts.push(/^[\d.,]+$/.test(r.kg) ? `${r.kg} kg` : r.kg)
+// "4 × 8 · 70 kg". useActual = show what was done (falls back to the plan)
+export function rowText(r, useActual = false) {
+  const reps = useActual ? (r.actual_reps || r.reps) : r.reps
+  const kg = useActual ? (r.actual_kg || r.kg) : r.kg
+  const parts = [r.sets && reps ? `${r.sets} × ${reps}` : reps || (r.sets ? `${r.sets}×` : '')]
+  if (kg) parts.push(/^[\d.,]+$/.test(kg) ? `${kg} kg` : kg)
   return parts.filter(Boolean).join(' · ')
+}
+
+// Number from a kg field: "72.5" → 72.5, "+10" → 10 (added weight), "BW" → 0, otherwise null
+export function kgValue(v) {
+  if (v == null) return null
+  const s = String(v).trim().replace(',', '.')
+  if (/^bw$/i.test(s)) return 0
+  const m = s.match(/^\+?(\d+(?:\.\d+)?)/)
+  return m ? parseFloat(m[1]) : null
 }
