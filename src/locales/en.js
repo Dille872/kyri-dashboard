@@ -6,6 +6,7 @@ export default {
     sessions: 'sessions', minutes: 'min', optional: 'optional',
   },
   nav: {
+    more: 'More',
     programs: 'Programs',
     overview: 'Overview', calendar: 'Calendar', clients: 'Clients', payments: 'Payments', settings: 'Settings',
     coachDashboard: 'Coach dashboard',

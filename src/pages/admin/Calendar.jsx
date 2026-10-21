@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Video, Repeat } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
-import { Modal, useRun, useToast } from '../../components/ui.jsx'
+import { Modal, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
 import { ExerciseRows, fromDb, rowText, saveRows } from '../../components/ExerciseRows.jsx'
 import { addDays, fmtDate, hm, isoDow, isoWeek, money, mondayOf, toIso, weekdayName, ymd } from '../../lib/format.js'
 
@@ -15,6 +15,8 @@ export default function Calendar({ data, reload, trainerId }) {
   const [monday, setMonday] = useState(mondayOf(today))
   const [sessions, setSessions] = useState([])
   const [edit, setEdit] = useState(null)   // session object or {isNew:true,date}
+  const mobile = useIsMobile()
+  const [day, setDay] = useState(today)      // selected day in the phone view
 
   const load = useCallback(async () => {
     const r = await run(supabase.from('sessions').select('*').eq('trainer_id', trainerId)
@@ -27,6 +29,52 @@ export default function Calendar({ data, reload, trainerId }) {
   const pendingIds = new Set(data.pending.map((p) => p.client_id))
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
   const dues = data.clients.filter((c) => c.active && c.next_due_date && !pendingIds.has(c.id))
+  const shiftWeek = (n) => { setMonday(addDays(monday, n * 7)); setDay(addDays(day, n * 7)) }
+  const sessionsOn = (d) => sessions.filter((s) => ymd(new Date(s.starts_at)) === d)
+
+  if (mobile) {
+    const list = sessionsOn(day)
+    return (
+      <>
+        <div className="head" style={{ marginBottom: 14 }}>
+          <div><div className="eyebrow">{t('calendar.week', { n: isoWeek(monday) })}</div>
+            <h1>{fmtDate(day, locale, { weekday: 'long', day: 'numeric', month: 'long' })}</h1></div>
+        </div>
+        <div className="daystrip">
+          <button className="icon-btn" onClick={() => shiftWeek(-1)} aria-label={t('calendar.prev')}><ChevronLeft /></button>
+          {days.map((d) => (
+            <button key={d} className={`ds-day ${d === today ? 'is-today' : ''}`} aria-pressed={d === day} onClick={() => setDay(d)}>
+              <span>{fmtDate(d, locale, { weekday: 'narrow' })}</span>
+              <b>{Number(d.slice(8))}</b>
+              <i className={sessionsOn(d).some((s) => s.client_id) ? 'dot' : 'dot off'} />
+            </button>
+          ))}
+          <button className="icon-btn" onClick={() => shiftWeek(1)} aria-label={t('calendar.next')}><ChevronRight /></button>
+        </div>
+        <section className="panel" style={{ marginTop: 12 }}>
+          <div className="list">
+            {list.length === 0 && dues.filter((c) => c.next_due_date === day).length === 0 && <div className="empty">{t('overview.noToday')}</div>}
+            {list.map((s) => (
+              <button key={s.id} className={`row t today-row mrow st-${s.status}`} onClick={() => setEdit(s)}>
+                <span className="time">{hm(new Date(s.starts_at))}</span>
+                <div style={{ minWidth: 0, textAlign: 'left' }}>
+                  <div className="name">{s.client_id ? byId[s.client_id]?.name : (s.notes || t('kinds.own'))}</div>
+                  <div className="meta">{s.format === 'online' ? <span className="fmt"><Video />{t('formats.online')}</span> : t(`kinds.${s.kind}`)} · {s.duration_min}′{s.series_id ? ' ↻' : ''}</div>
+                </div>
+                {s.status !== 'planned' ? <span className={`pill ${s.status === 'done' ? 'ok' : s.status === 'cancelled' ? 'mute' : 'warn'}`}>{t(`statuses.${s.status}`)}</span> : <ChevronRight size={18} style={{ color: 'var(--muted)' }} />}
+              </button>
+            ))}
+            {dues.filter((c) => c.next_due_date === day).map((c) => (
+              <div key={c.id} className="row"><div><div className="name">{c.name}</div><div className="meta">{t('calendar.paymentDue')}</div></div><span className="pill warn">{money(c.price, locale)}</span></div>
+            ))}
+          </div>
+        </section>
+        <button className="fab" onClick={() => setEdit({ isNew: true, date: day })} aria-label={t('calendar.newSession')}><Plus /></button>
+        <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId}
+          onSaved={() => { setEdit(null); load(); reload() }} />
+      </>
+    )
+  }
 
   return (
     <>

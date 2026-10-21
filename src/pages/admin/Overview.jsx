@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Plus, Check, X, RotateCcw, Video } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
-import { Modal, useRun, useToast } from '../../components/ui.jsx'
+import { Modal, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
 import { addDays, daysBetween, fmtDate, fmtRelative, hm, isoDow, money, mondayOf, payState, sessionsLeft, toIso, ymd } from '../../lib/format.js'
 
 export default function Overview({ data, reload, go, trainerId }) {
@@ -11,7 +11,8 @@ export default function Overview({ data, reload, go, trainerId }) {
   const toast = useToast()
   const [sessions, setSessions] = useState([])
   const [plans, setPlans] = useState([])
-  const [askFor, setAskFor] = useState(null)   // session for the "what happened?" dialog
+  const [askFor, setAskFor] = useState(null)
+  const mobile = useIsMobile()   // session for the "what happened?" dialog
   const today = ymd()
   const monday = mondayOf(today)
   const checkinClients = data.clients.filter((c) => c.active && c.mode !== 'gym' && c.checkin_weekday === isoDow(today))
@@ -78,6 +79,19 @@ export default function Overview({ data, reload, go, trainerId }) {
     }
   }
 
+  const kpis = (
+    <div className="grid kpis">
+        <div className="panel kpi"><div className="lab">{t('overview.kpiClients')}</div><div className="val">{active.length}</div>
+          <div className="meta">{t('overview.kpiClientsHint', { n: active.filter((c) => c.billing === 'monthly').length })}</div></div>
+        <div className="panel kpi"><div className="lab">{t('overview.kpiWeek')}</div><div className="val">{weekCount}</div>
+          <div className="meta">{fmtDate(monday, locale)} – {fmtDate(addDays(monday, 6), locale)}</div></div>
+        <div className="panel kpi"><div className="lab">{t('overview.kpiOutstanding')}</div><div className="val">{money(open.filter((c) => daysBetween(today, c.next_due_date) <= 7).reduce((a, c) => a + Number(c.price), 0), locale)}</div>
+          <div className="meta">{t('overview.kpiOutstandingHint', { n: open.filter((c) => daysBetween(today, c.next_due_date) <= 7).length })}</div></div>
+        <div className={`panel kpi ${pending.length ? 'hl' : ''}`}><div className="lab">{t('overview.kpiConfirm')}</div><div className="val">{pending.length}</div>
+          <div className="meta">{t('overview.kpiConfirmHint')}</div></div>
+      </div>
+  )
+
   return (
     <>
       <div className="head">
@@ -89,17 +103,7 @@ export default function Overview({ data, reload, go, trainerId }) {
         <button className="btn" onClick={() => go('calendar')}><Plus />{t('calendar.newSession')}</button>
       </div>
 
-      <div className="grid kpis">
-        <div className="panel kpi"><div className="lab">{t('overview.kpiClients')}</div><div className="val">{active.length}</div>
-          <div className="meta">{t('overview.kpiClientsHint', { n: active.filter((c) => c.billing === 'monthly').length })}</div></div>
-        <div className="panel kpi"><div className="lab">{t('overview.kpiWeek')}</div><div className="val">{weekCount}</div>
-          <div className="meta">{fmtDate(monday, locale)} – {fmtDate(addDays(monday, 6), locale)}</div></div>
-        <div className="panel kpi"><div className="lab">{t('overview.kpiOutstanding')}</div><div className="val">{money(open.filter((c) => daysBetween(today, c.next_due_date) <= 7).reduce((a, c) => a + Number(c.price), 0), locale)}</div>
-          <div className="meta">{t('overview.kpiOutstandingHint', { n: open.filter((c) => daysBetween(today, c.next_due_date) <= 7).length })}</div></div>
-        <div className={`panel kpi ${pending.length ? 'hl' : ''}`}><div className="lab">{t('overview.kpiConfirm')}</div><div className="val">{pending.length}</div>
-          <div className="meta">{t('overview.kpiConfirmHint')}</div></div>
-      </div>
-
+      {!mobile && kpis}
       <div className="grid two" style={{ marginTop: 14 }}>
         <div className="grid" style={{ alignContent: 'start' }}>
           <section className="panel">
@@ -188,6 +192,7 @@ export default function Overview({ data, reload, go, trainerId }) {
           )}
         </section>
       </div>
+      {mobile && <div style={{ marginTop: 14 }}>{kpis}</div>}
       <Modal open={!!askFor} title={t('overview.whatHappened')} onClose={() => setAskFor(null)}>
         {askFor && (
           <div className="grid" style={{ gap: 10 }}>

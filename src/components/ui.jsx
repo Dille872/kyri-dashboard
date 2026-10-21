@@ -70,6 +70,20 @@ export function LangSwitch({ onChange }) {
   )
 }
 
+// true on phone-sized screens; updates when the window is resized
+export function useIsMobile(query = '(max-width: 760px)') {
+  const get = () => (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(query).matches : false)
+  const [m, setM] = useState(get)
+  useEffect(() => {
+    if (!window.matchMedia) return
+    const mq = window.matchMedia(query)
+    const on = () => setM(mq.matches)
+    mq.addEventListener ? mq.addEventListener('change', on) : mq.addListener(on)
+    return () => (mq.removeEventListener ? mq.removeEventListener('change', on) : mq.removeListener(on))
+  }, [query])
+  return m
+}
+
 export function Spinner() { return <div className="spin" aria-label="Loading" /> }
 
 export async function copyText(text) {

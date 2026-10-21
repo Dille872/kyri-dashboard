@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Banknote, Landmark, Plus } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
-import { Modal, useRun, useToast } from '../../components/ui.jsx'
+import { Modal, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
 import { daysBetween, fmtDate, fmtRelative, money, payState, ymd } from '../../lib/format.js'
 
 const RevIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M7 20V4h6.5a4.5 4.5 0 0 1 0 9H7M12 13l5 7" /></svg>
@@ -18,6 +18,7 @@ export default function Payments({ data, reload, trainerId }) {
   const toast = useToast()
   const [history, setHistory] = useState([])
   const [rec, setRec] = useState(null)
+  const mobile = useIsMobile()
   const today = ymd()
 
   const load = useCallback(async () => {
@@ -88,7 +89,17 @@ export default function Payments({ data, reload, trainerId }) {
 
       <section className="panel" style={{ marginTop: 14 }}>
         <div className="panel-h"><h2>{t('payments.history')}</h2></div>
-        {history.length === 0 ? <div className="empty">{t('payments.noHistory')}</div> : (
+        {history.length === 0 ? <div className="empty">{t('payments.noHistory')}</div> : mobile ? (
+          <div className="list">
+            {history.map((h) => (
+              <div className="row" key={h.id}>
+                <div><div className="name">{byId[h.client_id]?.name}</div><div className="meta">{fmtDate(h.paid_on, locale)} · {t(`methods.${h.method}`)}</div></div>
+                <div style={{ textAlign: 'right' }}><div className="num">{money(h.amount, locale)}</div>
+                  {h.status !== 'confirmed' && <span className="pill mute">{t(`payments.st.${h.status}`)}</span>}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
           <div className="tbl-wrap"><table>
             <thead><tr><th>{t('payments.date')}</th><th>{t('payments.client')}</th><th>{t('payments.amount')}</th><th>{t('payments.method')}</th><th>{t('clients.status')}</th></tr></thead>
             <tbody>{history.map((h) => (

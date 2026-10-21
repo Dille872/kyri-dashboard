@@ -243,3 +243,67 @@ dialog.wide{width:min(760px,calc(100vw - 32px))}
 .choice{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--raise)}
 .choice:hover{border-color:var(--ink)}
 .choice:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* v1.2.0: phone layout for the trainer */
+.mapp{min-height:100%;display:flex;flex-direction:column}
+.mtop{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;background:var(--surface);border-bottom:1px solid var(--line);
+  padding:calc(10px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left))}
+.mtop .mark{width:44px;height:44px}
+.mtop .mark img{width:62%}
+.mtop-txt{min-width:0}
+.mtop-txt b{display:block;font:700 14px/1.2 var(--display);text-transform:uppercase;letter-spacing:.16em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mtop-txt small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.mmain{flex:1;padding:18px max(16px,env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));min-width:0}
+.mmain .head{margin-bottom:16px;gap:10px}
+.mmain h1{font-size:24px}
+.mmain .sub{font-size:14px}
+.mmain .panel{padding:16px;border-radius:12px}
+.mmain .kpi .val{font-size:24px;margin-top:6px}
+.mmain .kpis{gap:10px}
+.mmain .grid.two{gap:12px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);
+  padding:6px max(6px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left))}
+.tabbar button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:10px;color:var(--muted);font-size:11px;font-weight:700;text-align:center;min-width:0}
+.tabbar button span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabbar button[aria-current="true"]{color:var(--ink)}
+.tabbar button[aria-current="true"] .tab-ic{background:var(--raise)}
+.tabbar button:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+.tab-ic{position:relative;display:grid;place-items:center;width:44px;height:28px;border-radius:999px}
+.tab-ic svg{width:21px;height:21px}
+.tab-ic .badge{position:absolute;top:-4px;right:2px;margin:0;min-width:17px;height:17px;font-size:10px;padding:0 4px}
+.menu-row{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;padding:14px 12px;border-radius:10px;font-weight:600}
+.menu-row svg{width:20px;height:20px}
+.menu-row .chev{margin-left:auto;color:var(--muted)}
+.menu-row+.menu-row{border-top:1px solid var(--line)}
+.menu-row:hover{background:var(--raise)}
+.choice[aria-pressed="true"]{border-color:var(--ink)}
+.mrow{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;gap:12px;align-items:center;padding:13px 0;border-top:1px solid var(--line)}
+.mrow.row{grid-template-columns:minmax(0,1fr) auto}
+.mrow.row.t{grid-template-columns:52px minmax(0,1fr) auto}
+.list>.mrow:first-child{border-top:0}
+.daystrip{display:grid;grid-template-columns:auto repeat(7,minmax(0,1fr)) auto;gap:4px;align-items:center}
+.daystrip .icon-btn{width:32px;height:32px}
+.ds-day{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0;border-radius:12px;color:var(--muted);font-size:11px;font-weight:700}
+.ds-day b{font:700 17px/1.1 var(--display);color:var(--ink)}
+.ds-day.is-today b{text-decoration:underline;text-underline-offset:3px}
+.ds-day[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.ds-day[aria-pressed="true"] b{color:var(--on-accent)}
+.ds-day .dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.8}
+.ds-day .dot.off{opacity:0}
+.fab{all:unset;cursor:pointer;position:fixed;right:max(18px,env(safe-area-inset-right));bottom:calc(84px + env(safe-area-inset-bottom));z-index:25;width:56px;height:56px;border-radius:50%;
+  background:var(--accent);color:var(--on-accent);display:grid;place-items:center;box-shadow:0 6px 20px rgb(0 0 0 / .35)}
+.fab svg{width:24px;height:24px}
+.fab:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+@media (max-width:760px){.toast{bottom:calc(90px + env(safe-area-inset-bottom))}}
+@media (max-width:760px){
+  dialog,dialog.wide{width:100vw;max-width:100vw;margin:auto 0 0;border-radius:18px 18px 0 0;max-height:92vh;
+    padding:18px max(16px,env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+  .modal-foot .btn{flex:1}
+  .modal-foot .spacer{display:none}
+}
+@media (max-width:480px){
+  .row.t.today-row{grid-template-columns:48px minmax(0,1fr) auto}
+  .row:has(.icon-btn){grid-template-columns:minmax(0,1fr) auto}
+  .row:has(.icon-btn) .acts{justify-content:flex-end;flex-wrap:nowrap}
+  .today-row .pill{font-size:11px;padding:3px 8px}
+}

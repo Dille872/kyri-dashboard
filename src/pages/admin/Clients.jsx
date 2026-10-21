@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Plus, Copy } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { DICTS, LANGS, useI18n } from '../../i18n.jsx'
-import { Modal, copyText, useRun, useToast } from '../../components/ui.jsx'
+import { Modal, copyText, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
 import { fmtDate, money, payState, sessionsLeft, weekdayName, ymd } from '../../lib/format.js'
 
 export default function Clients({ data, reload, trainerId }) {
@@ -10,6 +10,7 @@ export default function Clients({ data, reload, trainerId }) {
   const toast = useToast()
   const [edit, setEdit] = useState(null)
   const [showInactive, setShowInactive] = useState(false)
+  const mobile = useIsMobile()
   const today = ymd()
   const pendingIds = new Set(data.pending.map((p) => p.client_id))
   const pkById = Object.fromEntries(data.packages.map((p) => [p.id, p]))
@@ -34,7 +35,22 @@ export default function Clients({ data, reload, trainerId }) {
         </div>
       </div>
       <div className="panel">
-        {list.length === 0 ? <div className="empty">{t('clients.empty')}</div> : (
+        {list.length === 0 ? <div className="empty">{t('clients.empty')}</div> : mobile ? (
+          <div className="list">
+            {list.map((c) => {
+              const p = payState(c, pendingIds, today); const left = sessionsLeft(c)
+              return (
+                <button key={c.id} className="row mrow" onClick={() => setEdit(c)}>
+                  <div style={{ minWidth: 0, textAlign: 'left' }}>
+                    <div className="name">{c.name}{!c.active && <span className="tag" style={{ marginLeft: 6 }}>{t('clients.inactive')}</span>}</div>
+                    <div className="meta">{t(`modes.${c.mode || 'gym'}`)} · {left == null ? t('clients.unlimited') : `${left}/${c.sessions_total}`} · {money(c.price, locale)}</div>
+                  </div>
+                  <span className={`pill ${p.cls}`}>{t(`payState.${p.key}`, { n: p.n, date: fmtDate(p.date, locale) })}</span>
+                </button>
+              )
+            })}
+          </div>
+        ) : (
           <div className="tbl-wrap"><table>
             <thead><tr><th>{t('clients.name')}</th><th>{t('clients.package')}</th><th>{t('clients.sessionsLeft')}</th><th>{t('clients.price')}</th><th>{t('clients.nextDue')}</th><th>{t('clients.status')}</th><th /></tr></thead>
             <tbody>
@@ -56,12 +72,12 @@ export default function Clients({ data, reload, trainerId }) {
           </table></div>
         )}
       </div>
-      <ClientModal edit={edit} onClose={() => setEdit(null)} data={data} trainerId={trainerId} onSaved={() => { setEdit(null); reload() }} />
+      <ClientModal edit={edit} onClose={() => setEdit(null)} data={data} trainerId={trainerId} onSaved={() => { setEdit(null); reload() }} onInvite={invite} />
     </>
   )
 }
 
-function ClientModal({ edit, onClose, data, trainerId, onSaved }) {
+function ClientModal({ edit, onClose, data, trainerId, onSaved, onInvite }) {
   const { t, locale } = useI18n()
   const run = useRun()
   const toast = useToast()
@@ -140,6 +156,8 @@ function ClientModal({ edit, onClose, data, trainerId, onSaved }) {
         <div className="meta" style={{ marginTop: -8 }}>{t('clients.showTrainingHelp')}</div>
         <label className="check-row" htmlFor="c-active"><input id="c-active" type="checkbox" checked={f.active} onChange={set('active')} />{t('clients.active')}</label>
         <div className="modal-foot">
+          {!edit.isNew && onInvite && <button type="button" className="btn ghost small" onClick={() => onInvite(edit)}>{t('clients.copyInvite')}</button>}
+          <span className="spacer" />
           <button type="button" className="btn ghost" onClick={onClose}>{t('common.cancel')}</button>
           <button className="btn">{t('common.save')}</button>
         </div>

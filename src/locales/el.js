@@ -6,6 +6,7 @@ export default {
     sessions: 'προπονήσεις', minutes: 'λεπτά', optional: 'προαιρετικό',
   },
   nav: {
+    more: 'Περισσότερα',
     programs: 'Προγράμματα',
     overview: 'Επισκόπηση', calendar: 'Ημερολόγιο', clients: 'Πελάτες', payments: 'Πληρωμές', settings: 'Ρυθμίσεις',
     coachDashboard: 'Πίνακας προπονητή',
