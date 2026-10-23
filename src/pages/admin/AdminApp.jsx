@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { LayoutGrid, CalendarDays, ClipboardList, Users, Dumbbell, CreditCard, Settings as Cog, LogOut, Menu, ChevronRight } from 'lucide-react'
+import { LayoutGrid, CalendarDays, Users, Dumbbell, CreditCard, Settings as Cog, LogOut, Menu, ChevronRight } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { LANGS, useI18n } from '../../i18n.jsx'
 import { LangSwitch, Logo, Spinner, useIsMobile, useRun } from '../../components/ui.jsx'
@@ -8,14 +8,14 @@ import Calendar from './Calendar.jsx'
 import Clients from './Clients.jsx'
 import Payments from './Payments.jsx'
 import Programs from './Programs.jsx'
-import Planning from './Planning.jsx'
 import Settings from './Settings.jsx'
 
-const VIEWS = ['overview', 'calendar', 'planning', 'clients', 'programs', 'payments', 'settings', 'more']
-const SIDE = ['overview', 'calendar', 'planning', 'clients', 'programs', 'payments', 'settings']
+// v2: weekly planning and online plans are replaced by Programs
+const VIEWS = ['overview', 'calendar', 'clients', 'programs', 'payments', 'settings', 'more']
+const SIDE = ['overview', 'calendar', 'clients', 'programs', 'payments', 'settings']
 const TABS = ['overview', 'calendar', 'clients', 'payments', 'more']       // bottom bar on phones
-const ICONS = { overview: LayoutGrid, calendar: CalendarDays, planning: ClipboardList, clients: Users, programs: Dumbbell, payments: CreditCard, settings: Cog, more: Menu }
-const PAGES = { overview: Overview, calendar: Calendar, planning: Planning, clients: Clients, programs: Programs, payments: Payments, settings: Settings }
+const ICONS = { overview: LayoutGrid, calendar: CalendarDays, clients: Users, programs: Dumbbell, payments: CreditCard, settings: Cog, more: Menu }
+const PAGES = { overview: Overview, calendar: Calendar, clients: Clients, programs: Programs, payments: Payments, settings: Settings }
 
 function viewFromHash() {
   const h = window.location.hash.replace('#', '')
@@ -52,13 +52,14 @@ export default function AdminApp({ trainerId, user, signOut }) {
 
   const go = (v, opts) => {
     if (opts?.client) { try { sessionStorage.setItem('programs-client', opts.client) } catch {} }
+    if (opts?.profile) { try { sessionStorage.setItem('clients-profile', opts.profile) } catch {} }
     window.location.hash = v; setView(v); window.scrollTo(0, 0)
   }
 
   if (!data) return <Spinner />
   const badge = (v) => v === 'payments' && data.pending.length > 0 && <span className="badge">{data.pending.length}</span>
   const Page = PAGES[view]
-  const tabActive = (v) => view === v || (v === 'more' && ['planning', 'programs', 'settings', 'more'].includes(view))
+  const tabActive = (v) => view === v || (v === 'more' && ['programs', 'settings', 'more'].includes(view))
 
   if (mobile) return (
     <div className="mapp">
@@ -122,7 +123,7 @@ function More({ data, user, go, signOut }) {
   return (
     <div className="grid" style={{ gap: 14 }}>
       <section className="panel" style={{ padding: 6 }}>
-        {['planning', 'programs', 'settings'].map((v) => {
+        {['programs', 'settings'].map((v) => {
           const Icon = ICONS[v]
           return (
             <button key={v} className="menu-row" onClick={() => go(v)}>

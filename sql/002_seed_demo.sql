@@ -1,7 +1,7 @@
 -- ============================================================
 -- Demo data (fake clients) for building and showing the app.
 --
--- 1. Run 001, 003, 004, 005 and 006 first.
+-- 1. Run 001 and 003 – 007 first.
 -- 2. Check the email in the LAST line (that person becomes the trainer admin), then run this file.
 --
 -- The six demo clients get "plus" aliases of that email (you+elena@…).
@@ -12,6 +12,10 @@
 --   • a few no-shows / late cancellations (attendance)
 --   • this week's and next week's sessions; part of next week is already planned
 --   • workout templates, an online plan for Nikos, payments in every state
+--   • v2: programs (Marios from Kyri's notes, Elena, Andreas, Nikos online), kg history,
+--     exercise notes/videos, Nikos' online session from yesterday, PAR-Q answers
+--     (Sofia flagged, Elena not yet → she sees PAR-Q + rules at her first login),
+--     rules, Elena on her last pack session, two archived clients
 -- ============================================================
 
 -- helper: number → "72.5" / "70"
@@ -36,6 +40,25 @@ begin
   return sid;
 end $$;
 
+-- helper: a program with days. days = [{title, focus, note, blocks}]
+create or replace function public.seed_program(p_t uuid, p_c uuid, p_title text, p_days jsonb)
+returns uuid language plpgsql as $$
+declare pid uuid; d jsonb; i int := 0;
+begin
+  insert into programs (trainer_id, client_id, title) values (p_t, p_c, p_title) returning id into pid;
+  for d in select * from jsonb_array_elements(p_days) loop
+    i := i + 1;
+    insert into program_days (program_id, trainer_id, position, title, focus, note, blocks)
+    values (pid, p_t, i, coalesce(d->>'title', 'Day ' || i), d->>'focus', d->>'note', coalesce(d->'blocks', '[]'));
+  end loop;
+  return pid;
+end $$;
+
+-- helper: id of day n of a client's program
+create or replace function public.seed_day(p_c uuid, p_n int) returns uuid language sql stable as $$
+  select d.id from program_days d join programs p on p.id = d.program_id where p.client_id = p_c and d.position = p_n
+$$;
+
 create or replace function public.seed_demo(admin_email text)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare
@@ -44,6 +67,8 @@ declare
   alias text := split_part(admin_email, '@', 1) || '+';
   p10 uuid; p1w uuid; p2w uuid; pon uuid;
   c1 uuid; c2 uuid; c3 uuid; c4 uuid; c5 uuid; c6 uuid;
+  c7 uuid; c8 uuid; c9 uuid; c10 uuid; sid uuid; wid uuid; k int; seq int[]; nexts int;
+  ans jsonb; q jsonb;
   wk date := date_trunc('week', current_date)::date;   -- Monday of this week
   w int; n int; st text; d date; w_id uuid; i int;
 begin
@@ -168,11 +193,17 @@ begin
   perform seed_session(t, c1, wk + 10, '17:30', 'strength', 'planned', 'Studio');
   perform seed_session(t, c5, wk + 12, '10:00', 'strength', 'planned', 'Studio');
 
+  -- Kyri already ticked most of this week; only Elena's and Chris' last ones are still open
+  update sessions set status = 'done' where trainer_id = t and status = 'planned' and client_id is not null
+     and client_id not in (c1, c6) and starts_at < now() - interval '20 hours';
+
   -- realistic pack counters (the trigger counted every past session)
   update clients set sessions_used = 7 where id = c1;
   update clients set sessions_used = 3 where id = c2;
   update clients set sessions_used = 2 where id = c3;
   update clients set sessions_used = 0 where id = c4;
+  perform seed_session(t, c4, current_date + 3, '12:30', 'strength', 'planned', null, '[]', 'online');
+  update sessions set meeting_url = 'https://zoom.us/j/0000000000' where client_id = c4 and meeting_url is null;
   update clients set sessions_used = 4 where id = c5;
   update clients set sessions_used = 7 where id = c6;
 
@@ -222,11 +253,213 @@ begin
   insert into payments (trainer_id, client_id, amount, method, status, reported_at, reference)
     values (t, c6, 280, 'revolut', 'reported', now() - interval '11 hours', 'Chris Petrides');
 
+
+  -- ============================================================
+  -- v2.0: programs, kg history, online sessions, PAR-Q, rules, archive
+  -- ============================================================
+  update trainers set reminder_days = 2,
+    rules_text = E'• Free cancellation until 24 hours before your session.\n• Later cancellations or no-shows count as a session from your pack.\n• Packs are valid for 8 weeks.\n• Please bring a towel and water.',
+    parq_questions = parq_questions || '[{"q":"What are your main goals for the next 3 months?","type":"text","flag":false}]'::jsonb
+  where id = t;
+
+  -- new clients: Marios (program from Kyri's notes), Sofia (new, flagged PAR-Q), two archived
+  insert into clients (trainer_id, name, email, lang, package_id, price, billing, sessions_total, next_due_date, mode)
+    values (t, 'Marios Demetriou', alias || 'marios@' || domain_part, 'el', p10, 450, 'pack', 10, null, 'gym') returning id into c7;
+  insert into clients (trainer_id, name, email, lang, package_id, price, billing, sessions_total, next_due_date, mode)
+    values (t, 'Sofia Andreou',    alias || 'sofia@'  || domain_part, 'el', p10, 450, 'pack', 10, null, 'gym') returning id into c8;
+  insert into clients (trainer_id, name, email, lang, package_id, price, billing, sessions_total, next_due_date, mode, active, archived_at)
+    values (t, 'Petros Kyprianou', alias || 'petros@' || domain_part, 'el', p1w, 150, 'monthly', 4, null, 'gym', false, now() - interval '40 days') returning id into c9;
+  insert into clients (trainer_id, name, email, lang, package_id, price, billing, sessions_total, next_due_date, mode, active, archived_at)
+    values (t, 'Anna Michael',     alias || 'anna@'   || domain_part, 'en', p10, 450, 'pack', 10, null, 'gym', false, now() - interval '75 days') returning id into c10;
+
+  -- ---------- Exercise library: notes + videos, reused in every program ----------
+  insert into exercise_library (trainer_id, name, note, video_type, video_url) values
+    (t, 'Deadlift',             'Brace hard, bar close to the shins, push the floor away.', 'yt', 'https://www.youtube.com/results?search_query=conventional+deadlift+technique'),
+    (t, 'DB Shoulder Press',    'Ribs down, don''t lean back.', null, null),
+    (t, 'Step Up + Knee Drive', null, 'yt', 'https://www.youtube.com/results?search_query=step+up+knee+drive+technique'),
+    (t, 'KB Swing',             'Hips, not arms. Snap at the top.', 'yt', 'https://www.youtube.com/results?search_query=kettlebell+swing+technique'),
+    (t, 'Smith Squat',          'Feet slightly in front of the bar, sit straight down.', null, null),
+    (t, 'Goblet Squat',         'Elbows inside the knees, chest up.', 'yt', 'https://www.youtube.com/results?search_query=goblet+squat+technique'),
+    (t, 'Back squat',           'Knees out, full depth only if the back stays neutral.', null, null),
+    (t, 'Romanian deadlift',    'Soft knees, push the hips back, bar slides down the thighs.', 'yt', 'https://www.youtube.com/results?search_query=romanian+deadlift+technique'),
+    (t, 'Walking lunges',       'Long step, back knee kisses the floor.', null, null),
+    (t, 'Push Ups',             'Body in one line, chest to the floor.', null, null);
+
+  -- ---------- Programs ----------
+  -- Marios: exactly Kyri's notes (paste import)
+  perform seed_program(t, c7, 'Marios Demetriou Program', $j$[
+    {"title":"Day 1","focus":"Strength + Power","blocks":[
+      {"type":"single","items":[{"exercise":"Smith Squat","rx":"3×8"}]},
+      {"type":"single","items":[{"exercise":"DB Romanian Deadlift","rx":"3×10"}]},
+      {"type":"single","items":[{"exercise":"DB Bench Press","rx":"3×8–10"}]},
+      {"type":"single","items":[{"exercise":"Medicine Ball Slam","rx":"3×8"}]},
+      {"type":"superset","rounds":3,"items":[{"exercise":"TRX Row","rx":"×10"},{"exercise":"Medicine Ball Chest Throw","rx":"×8"}]},
+      {"type":"single","items":[{"exercise":"Sled Push","rx":"4×20m"}]},
+      {"type":"single","items":[{"exercise":"Farmer Carry","rx":"3×30m"}]}]},
+    {"title":"Day 2","focus":"Explosiveness + Conditioning","blocks":[
+      {"type":"single","items":[{"exercise":"Deadlift","rx":"3×10","target":110}]},
+      {"type":"single","items":[{"exercise":"DB Shoulder Press","rx":"3×8–10"}]},
+      {"type":"single","items":[{"exercise":"Step Up + Knee Drive","rx":"3×8/leg"}]},
+      {"type":"single","items":[{"exercise":"KB Swing","rx":"3×12"}]},
+      {"type":"superset","rounds":3,"items":[{"exercise":"Push Ups","rx":"×10"},{"exercise":"Smash Ball Wall Throw","rx":"×8"}]},
+      {"type":"single","items":[{"exercise":"Sled Pull","rx":"3×20m"}]},
+      {"type":"single","items":[{"exercise":"Row","rx":"3×200m"}]},
+      {"type":"finisher","rounds":5,"lines":["Assault Bike — 30 sec","Rest — 30 sec"]}]},
+    {"title":"Day 3","focus":"Full body + Fighter conditioning","blocks":[
+      {"type":"single","items":[{"exercise":"Goblet Squat","rx":"3×10"}]},
+      {"type":"single","items":[{"exercise":"1-Arm DB Row","rx":"3×10/side"}]},
+      {"type":"single","items":[{"exercise":"DB Incline Press","rx":"3×8–10"}]},
+      {"type":"single","items":[{"exercise":"KB Clean + Push Press","rx":"3×6/side"}]}]}
+  ]$j$);
+
+  perform seed_program(t, c1, 'Elena · Strength block', $j$[
+    {"title":"Day 1","focus":"Lower body","blocks":[
+      {"type":"single","items":[{"exercise":"Back squat","rx":"4×8"}]},
+      {"type":"single","items":[{"exercise":"Romanian deadlift","rx":"3×10"}]},
+      {"type":"superset","rounds":3,"items":[{"exercise":"Walking lunges","rx":"×12"},{"exercise":"Plank","rx":"45 sec"}]}]},
+    {"title":"Day 2","focus":"Upper body + Pull","blocks":[
+      {"type":"single","items":[{"exercise":"Pull-up","rx":"4×6"}]},
+      {"type":"single","items":[{"exercise":"DB Bench Press","rx":"3×10"}]},
+      {"type":"single","items":[{"exercise":"1-Arm DB Row","rx":"3×10/side"}]}]}
+  ]$j$);
+
+  perform seed_program(t, c2, 'Andreas · Hybrid', $j$[
+    {"title":"Day 1","focus":"Push","note":"Warm up 10 min on the bike first.","blocks":[
+      {"type":"single","items":[{"exercise":"Bench press","rx":"4×8"}]},
+      {"type":"single","items":[{"exercise":"Overhead press","rx":"3×8"}]},
+      {"type":"superset","rounds":3,"items":[{"exercise":"Push Ups","rx":"×12"},{"exercise":"DB Lateral Raise","rx":"×15"}]}]},
+    {"title":"Day 2","focus":"Legs","blocks":[
+      {"type":"single","items":[{"exercise":"Back squat","rx":"4×6"}]},
+      {"type":"single","items":[{"exercise":"Romanian deadlift","rx":"3×10"}]},
+      {"type":"single","items":[{"exercise":"Walking lunges","rx":"3×12"}]}]},
+    {"title":"Day 3","focus":"Pull","blocks":[
+      {"type":"single","items":[{"exercise":"Dumbbell row","rx":"3×10"}]},
+      {"type":"single","items":[{"exercise":"Pull-up","rx":"4×6"}]}]}
+  ]$j$);
+
+  perform seed_program(t, c4, 'Nikos · Online fat loss + strength', $j$[
+    {"title":"Day 1","focus":"Lower body","note":"Warm up 10 min on the bike. Last set of squats: leave 1–2 reps in the tank.","blocks":[
+      {"type":"single","items":[{"exercise":"Goblet Squat","rx":"4×10"}]},
+      {"type":"single","items":[{"exercise":"Romanian deadlift","rx":"3×10"}]},
+      {"type":"superset","rounds":3,"items":[{"exercise":"Walking lunges","rx":"×12"},{"exercise":"KB Swing","rx":"×15"}]},
+      {"type":"finisher","rounds":5,"lines":["Assault Bike — 30 sec","Rest — 30 sec"]}]},
+    {"title":"Day 2","focus":"Upper body","note":"Slow on the way down (3 sec) on every press.","blocks":[
+      {"type":"single","items":[{"exercise":"DB Bench Press","rx":"4×8–10"}]},
+      {"type":"single","items":[{"exercise":"1-Arm DB Row","rx":"3×10/side"}]},
+      {"type":"single","items":[{"exercise":"DB Shoulder Press","rx":"3×10"}]},
+      {"type":"superset","rounds":3,"items":[{"exercise":"Push Ups","rx":"×10"},{"exercise":"Plank","rx":"40 sec"}]}]},
+    {"title":"Day 3","focus":"Full body conditioning","blocks":[
+      {"type":"single","items":[{"exercise":"Deadlift","rx":"3×8"}]},
+      {"type":"single","items":[{"exercise":"Step Up + Knee Drive","rx":"3×8/leg"}]},
+      {"type":"finisher","rounds":4,"lines":["KB Swing ×15","Push Ups ×10","Rest — 60 sec"]}]}
+  ]$j$);
+
+  -- ---------- Marios: 11 sessions over 5 weeks (Tue + Fri 18:00), logged by Kyri ----------
+  seq := array[1,2,3,1,2,3,1,2,3,1,2];
+  for k in 1..11 loop
+    d := current_date - 38 + ((k - 1) / 2) * 7 + case when k % 2 = 1 then 1 else 4 end;
+    sid := seed_session(t, c7, d, '18:00', 'strength', 'done', 'Studio');
+    insert into exercise_logs (trainer_id, client_id, day_id, session_id, exercise, kg, reps, source, logged_on)
+    select t, c7, seed_day(c7, seq[k]), sid, x.e, x.kg, x.r, 'trainer', d
+    from (values
+      (1, 'Smith Squat',          (array[30,32.5,35,40])[(k + 2) / 3], '8'),
+      (1, 'DB Romanian Deadlift', (array[17.5,20,20,22])[(k + 2) / 3], '10'),
+      (1, 'DB Bench Press',       (array[12.5,14,15,15])[(k + 2) / 3], '9'),
+      (2, 'Deadlift',             (array[60,70,80,90])[(k + 1) / 3], '10'),
+      (2, 'DB Shoulder Press',    (array[10,10,12.5,15])[(k + 1) / 3], '8'),
+      (2, 'KB Swing',             (array[16,16,20,20])[(k + 1) / 3], '12'),
+      (3, 'Goblet Squat',         (array[20,22,24])[k / 3], '10'),
+      (3, '1-Arm DB Row',         (array[20,22,24])[k / 3], '10')
+    ) x(dy, e, kg, r) where x.dy = seq[k];
+  end loop;
+  -- next for Marios: Day 3 · today 18:00
+  perform seed_session(t, c7, current_date, '18:00', 'strength', 'planned', 'Studio');
+  perform seed_session(t, c7, current_date + 4, '18:00', 'strength', 'planned', 'Studio');
+
+  -- Elena + Andreas: their earlier gym logs become kg history for the new program view
+  insert into exercise_logs (trainer_id, client_id, session_id, day_id, exercise, kg, reps, source, logged_on)
+  select r.trainer_id, r.client_id, r.session_id,
+         seed_day(r.client_id, case when r.client_id = c1 then case when extract(isodow from s.starts_at at time zone 'Asia/Nicosia') = 1 then 1 else 2 end
+                                    else (extract(isodow from s.starts_at at time zone 'Asia/Nicosia')::int + 1) / 2 end),
+         r.exercise, nullif(regexp_replace(coalesce(r.actual_kg, r.kg), '[^0-9.]', '', 'g'), '')::numeric, r.actual_reps, 'trainer',
+         (s.starts_at at time zone 'Asia/Nicosia')::date
+  from exercise_rows r join sessions s on s.id = r.session_id
+  where s.status = 'done' and r.client_id in (c1, c2) and coalesce(r.actual_kg, r.kg) ~ '^[0-9.]+$';
+
+  -- ---------- Nikos online: Day 1/2/3 last week, Day 1 yesterday → Day 2 is next ----------
+  for k in 1..4 loop
+    d := case k when 1 then current_date - 8 when 2 then current_date - 6 when 3 then current_date - 4 else current_date - 1 end;
+    nexts := case when k = 4 then 1 else k end;
+    insert into workout_logs (trainer_id, client_id, day_id, day_title, minutes, note, finished_at)
+    values (t, c4, seed_day(c4, nexts), 'Day ' || nexts, (array[52,45,38,48])[k],
+            case k when 4 then 'Felt strong. KB swings were hard on the last round, squats 2 kg up!' when 2 then 'Shoulder a bit tight on the press.' end,
+            (d + time '19:10') at time zone 'Asia/Nicosia')
+    returning id into wid;
+    insert into exercise_logs (trainer_id, client_id, day_id, workout_log_id, exercise, kg, reps, source, logged_on)
+    select t, c4, seed_day(c4, nexts), wid, x.e, x.kg, x.r, 'client', d
+    from (values
+      (1, 'Goblet Squat', case when k = 4 then 22 else 20 end, '10'),
+      (1, 'Romanian deadlift', case when k = 4 then 45 else 40 end, '10'),
+      (1, 'KB Swing', 16::numeric, '15'),
+      (2, 'DB Bench Press', 18::numeric, '9'),
+      (2, '1-Arm DB Row', 20::numeric, '10'),
+      (2, 'DB Shoulder Press', 10::numeric, '10'),
+      (3, 'Deadlift', 70::numeric, '8')
+    ) x(dy, e, kg, r) where x.dy = nexts;
+  end loop;
+  update clients set sessions_used = 0 where id = c4;
+  perform seed_session(t, c4, current_date + 3, '12:30', 'strength', 'planned', null, '[]', 'online');
+  update sessions set meeting_url = 'https://zoom.us/j/0000000000' where client_id = c4 and meeting_url is null;
+
+  -- ---------- Sofia (new) + archived clients ----------
+  perform seed_session(t, c8, current_date + 3, '09:00', 'strength', 'planned', 'Studio');
+  for k in 1..4 loop
+    perform seed_session(t, c9, current_date - 70 - k * 7, '07:30', 'strength', 'done', 'Studio');
+    perform seed_session(t, c10, current_date - 100 - k * 7, '11:00', 'strength', 'done', 'Studio');
+  end loop;
+  update clients set sessions_used = 0 where id = c8;
+  update clients set sessions_used = 4 where id = c9;
+  update clients set sessions_used = 10 where id = c10;
+  insert into payments (trainer_id, client_id, amount, method, status, paid_on, decided_at, reference) values
+    (t, c7, 450, 'revolut', 'confirmed', current_date - 12, now() - interval '12 days', 'Marios Demetriou'),
+    (t, c8, 450, 'cash',    'confirmed', current_date,      now(),                     'Sofia Andreou'),
+    (t, c9, 150, 'bank',    'confirmed', current_date - 98, now() - interval '98 days','Petros Kyprianou'),
+    (t, c10,450, 'revolut', 'confirmed', current_date - 140,now() - interval '140 days','Anna Michael');
+  update clients set sessions_used = 5 where id = c7;
+
+  -- ---------- PAR-Q answers + rules (Elena has none yet → onboarding at her first login) ----------
+  select parq_questions into q from trainers where id = t;
+  for sid, d in select id, (created_at - interval '1 day' * (10 + (ascii(name) % 40)))::date from clients
+                 where trainer_id = t and id not in (c1, c8) loop
+    select jsonb_agg(e || case when e->>'type' = 'yn' then jsonb_build_object('answer', false)
+                               else jsonb_build_object('text', 'Get stronger and lose a few kilos.') end)
+      into ans from jsonb_array_elements(q) e;
+    insert into parq_responses (trainer_id, client_id, answers, signed_name, flagged, reviewed_at, created_at)
+    select t, sid, ans, name, false, d + time '12:00', d + time '10:00' from clients where id = sid;
+    update clients set parq_at = d + time '10:00', rules_accepted_at = d + time '10:02' where id = sid;
+  end loop;
+  select jsonb_agg(e || case when e->>'type' = 'text' then jsonb_build_object('text', 'Get back to running and build strength after my knee surgery.')
+                             else jsonb_build_object('answer', (o = 5)) end order by o)
+    into ans from jsonb_array_elements(q) with ordinality x(e, o);
+  insert into parq_responses (trainer_id, client_id, answers, explanation, signed_name, flagged, created_at)
+  values (t, c8, ans, 'Knee surgery (ACL) in 2024, cleared by my doctor for training.', 'Sofia Andreou', true, now() - interval '2 hours');
+  update clients set parq_at = now() - interval '2 hours', rules_accepted_at = now() - interval '2 hours' where id = c8;
+
+  -- ---------- Elena: exactly one session left in her pack → reminder ----------
+  if not exists (select 1 from sessions where client_id = c1 and status = 'planned'
+                 and starts_at between now() and (current_date + 3)::timestamp at time zone 'Asia/Nicosia') then
+    perform seed_session(t, c1, current_date + 2, '10:00', 'strength', 'planned', 'Studio');
+  end if;
+  update clients set sessions_used = 10 - 1 - (select count(*) from sessions where client_id = c1 and status = 'planned' and starts_at < now())
+   where id = c1;
+
   return t;
 end $$;
 
 revoke all on function public.seed_demo(text) from public, anon, authenticated;
 revoke all on function public.seed_session(uuid, uuid, date, time, text, text, text, jsonb, text) from public, anon, authenticated;
+revoke all on function public.seed_program(uuid, uuid, text, jsonb) from public, anon, authenticated;
+revoke all on function public.seed_day(uuid, int) from public, anon, authenticated;
 
 -- ↓↓↓ The trainer admin's email ↓↓↓
 select public.seed_demo('dillemc@hotmail.com');

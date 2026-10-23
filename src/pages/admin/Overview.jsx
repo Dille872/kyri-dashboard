@@ -1,42 +1,48 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Plus, Check, X, RotateCcw, Video } from 'lucide-react'
+import { Plus, Check, X, RotateCcw, Video, AlertTriangle } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { Modal, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
-import SessionLog from '../../components/SessionLog.jsx'
-import { addDays, daysBetween, fmtDate, fmtRelative, hm, isoDow, money, mondayOf, payState, sessionsLeft, toIso, ymd } from '../../lib/format.js'
+import ProgramLog from '../../components/ProgramLog.jsx'
+import { packStatuses } from '../../lib/pack.js'
+import { fmtKg } from '../../lib/program.js'
+import { addDays, daysBetween, fmtDate, fmtRelative, hm, money, mondayOf, payState, toIso, ymd } from '../../lib/format.js'
 
 export default function Overview({ data, reload, go, trainerId }) {
   const { t, locale } = useI18n()
   const run = useRun()
   const toast = useToast()
   const [sessions, setSessions] = useState([])
-  const [plans, setPlans] = useState([])
+  const [feed, setFeed] = useState([])           // online clients' finished sessions
+  const [packSessions, setPackSessions] = useState([])
+  const [parqNew, setParqNew] = useState([])
+  const [withProgram, setWithProgram] = useState(new Set())
   const [askFor, setAskFor] = useState(null)
   const mobile = useIsMobile()
   const [logFor, setLogFor] = useState(null)   // session whose training log is open
-  const [nextWeek, setNextWeek] = useState(null)
   const [clientCancels, setClientCancels] = useState([])   // session for the "what happened?" dialog
   const today = ymd()
   const monday = mondayOf(today)
-  const checkinClients = data.clients.filter((c) => c.active && c.mode !== 'gym' && c.checkin_weekday === isoDow(today))
 
   const load = useCallback(async () => {
     const from = toIso(addDays(today, -14), '00:00')
     const to = toIso(addDays(monday, 7), '00:00')
     const r = await run(supabase.from('sessions').select('*').eq('trainer_id', trainerId).gte('starts_at', from).lt('starts_at', to).order('starts_at'))
     if (r.ok) setSessions(r.data)
-    const nw = await run(supabase.from('sessions').select('id, exercise_rows(id)').eq('trainer_id', trainerId).not('client_id', 'is', null).eq('status', 'planned')
-      .gte('starts_at', toIso(addDays(monday, 7), '00:00')).lt('starts_at', toIso(addDays(monday, 14), '00:00')))
-    if (nw.ok) setNextWeek({ total: nw.data.length, planned: nw.data.filter((x) => x.exercise_rows?.length).length })
     const cc = await run(supabase.from('sessions').select('*').eq('trainer_id', trainerId).eq('cancelled_by', 'client')
       .gte('cancelled_at', new Date(Date.now() - 3 * 864e5).toISOString()).order('cancelled_at', { ascending: false }))
     if (cc.ok) setClientCancels(cc.data)
-    if (checkinClients.length) {
-      const p = await run(supabase.from('plan_workouts').select('client_id, completed_at').in('client_id', checkinClients.map((c) => c.id)).eq('week_start', monday))
-      if (p.ok) setPlans(p.data)
-    }
-  }, [trainerId, today, monday, run, checkinClients.map((c) => c.id).join()]) // eslint-disable-line react-hooks/exhaustive-deps
+    const [wl, ps, pq, pr] = await Promise.all([
+      supabase.from('workout_logs').select('*, exercise_logs(exercise, kg)').eq('trainer_id', trainerId)
+        .gte('finished_at', new Date(Date.now() - 7 * 864e5).toISOString()).order('finished_at', { ascending: false }).limit(10),
+      supabase.from('sessions').select('id, client_id, starts_at, status').eq('trainer_id', trainerId).eq('status', 'planned')
+        .not('client_id', 'is', null).gte('starts_at', new Date(Date.now() - 60 * 864e5).toISOString()).order('starts_at').limit(1000),
+      supabase.from('parq_responses').select('*').eq('trainer_id', trainerId).eq('flagged', true).is('reviewed_at', null).order('created_at', { ascending: false }),
+      supabase.from('programs').select('client_id').eq('trainer_id', trainerId),
+    ])
+    setFeed(wl.data || []); setPackSessions(ps.data || []); setParqNew(pq.data || [])
+    setWithProgram(new Set((pr.data || []).map((x) => x.client_id)))
+  }, [trainerId, today, monday, run])
   useEffect(() => { load() }, [load])
 
   const { clients, pending, trainer } = data
@@ -47,7 +53,10 @@ export default function Overview({ data, reload, go, trainerId }) {
   const overdue = open.filter((c) => daysBetween(today, c.next_due_date) < 0)
   const soon = open.filter((c) => { const n = daysBetween(today, c.next_due_date); return n >= 0 && n <= 14 })
   const due = [...overdue, ...soon].sort((a, b) => a.next_due_date.localeCompare(b.next_due_date))
-  const low = active.filter((c) => { const l = sessionsLeft(c); return l != null && l <= 2 })
+  const packs = packStatuses(active, packSessions, trainer.reminder_days ?? 2)
+  const ending = active.filter((c) => packs[c.id]?.remind || packs[c.id]?.kind === 'used')
+  const lastIds = new Set(Object.values(packs).filter((p) => p.kind === 'last').map((p) => p.session.id))
+  const canLog = (s) => s.client_id && withProgram.has(s.client_id) && byId[s.client_id]?.mode !== 'online'
 
   const todays = sessions.filter((s) => ymd(new Date(s.starts_at)) === today)
   const weekCount = sessions.filter((s) => s.client_id && ymd(new Date(s.starts_at)) >= monday && s.status !== 'cancelled').length
@@ -76,7 +85,7 @@ export default function Overview({ data, reload, go, trainerId }) {
     return (
       <div className="acts">
         <button className="icon-btn" onClick={() => setAskFor(s)} aria-label={t('overview.didntHappen')} title={t('overview.didntHappen')}><X /></button>
-        <button className="icon-btn yes" onClick={() => { setStatus(s, 'done'); setLogFor(s) }} aria-label={t('statuses.done')} title={t('statuses.done')}><Check /></button>
+        <button className="icon-btn yes" onClick={() => { setStatus(s, 'done'); if (canLog(s)) setLogFor({ ...s, status: 'done' }) }} aria-label={t('statuses.done')} title={t('statuses.done')}><Check /></button>
       </div>
     )
   }
@@ -131,22 +140,14 @@ export default function Overview({ data, reload, go, trainerId }) {
                     {s.client_id
                       ? <button className="name linkish" onClick={() => setLogFor(s)}>{byId[s.client_id]?.name}</button>
                       : <div className="name">{s.notes || t('kinds.own')}</div>}
-                    <div className="meta">{s.format === 'online' ? <span className="fmt"><Video />{t('formats.online')}</span> : t(`kinds.${s.kind}`)}{s.location ? ` · ${s.location}` : ''}</div></div>
+                    <div className="meta">{s.format === 'online' ? <span className="fmt"><Video />{t('formats.online')}</span> : t(`kinds.${s.kind}`)}{s.location ? ` · ${s.location}` : ''}
+                      {canLog(s) && s.status === 'planned' ? ` · ${t('overview.tapToLog')}` : ''}</div>
+                    {lastIds.has(s.id) && <span className="pill warn" style={{ marginTop: 4 }}>{t('overview.lastTag')}</span>}</div>
                   <QuickActions s={s} />
                 </div>
               ))}
             </div>
           </section>
-          {nextWeek && nextWeek.total > 0 && (
-            <section className="panel">
-              <div className="row" style={{ borderTop: 0, padding: 0 }}>
-                <div><div className="name">{t('overview.planNext')}</div>
-                  <div className="meta">{t('planning.progress', { done: nextWeek.planned, total: nextWeek.total })}</div>
-                  <div className="bar" style={{ width: 160 }}><i style={{ width: `${(nextWeek.planned / nextWeek.total) * 100}%` }} /></div></div>
-                <button className="chip solid" onClick={() => go('planning')}>{t('overview.openPlanning')}</button>
-              </div>
-            </section>
-          )}
           {past.length > 0 && (
             <section className="panel">
               <div className="panel-h"><h2>{t('overview.past')}</h2></div>
@@ -188,23 +189,34 @@ export default function Overview({ data, reload, go, trainerId }) {
               </div>
             </>
           )}
-          {checkinClients.length > 0 && (
+          {parqNew.length > 0 && (
             <>
-              <div className="panel-h"><h2>{t('overview.checkins')}</h2><span className="pill info">{checkinClients.length}</span></div>
+              <div className="panel-h"><h2>{t('overview.newParq')}</h2><span className="pill bad">{parqNew.length}</span></div>
               <div className="list" style={{ marginBottom: 18 }}>
-                {checkinClients.map((c) => {
-                  const mine = plans.filter((p) => p.client_id === c.id)
-                  return (
-                    <div className="row" key={c.id}>
-                      <div><div className="name">{c.name}</div>
-                        <div className="meta">{mine.length ? t('overview.weekDone', { done: mine.filter((p) => p.completed_at).length, total: mine.length }) : t('overview.noPlan')}</div></div>
-                      <button className="chip solid" onClick={() => go('programs', { client: c.id })}>{t('overview.openPlan')}</button>
-                    </div>
-                  )
-                })}
+                {parqNew.map((r) => (
+                  <div className="row" key={r.id}>
+                    <div style={{ minWidth: 0 }}><div className="name"><AlertTriangle size={14} style={{ verticalAlign: '-2px', color: 'var(--bad)' }} /> {byId[r.client_id]?.name}</div>
+                      <div className="meta">{t('overview.parqYes', { n: r.answers.filter((a) => a.type === 'yn' && a.answer === true).length })}{r.explanation ? ` · ${r.explanation}` : ''}</div></div>
+                    <button className="chip solid" onClick={() => go('clients', { profile: r.client_id })}>{t('common.open')}</button>
+                  </div>
+                ))}
               </div>
             </>
           )}
+          <div className="panel-h"><h2>{t('overview.online')}</h2>{feed.length > 0 && <span className="pill info">{feed.length}</span>}</div>
+          <div className="list" style={{ marginBottom: 18 }}>
+            {feed.length === 0 && <div className="empty">{t('overview.noOnline')}</div>}
+            {feed.map((w) => (
+              <div className="row" key={w.id}>
+                <div style={{ minWidth: 0 }}>
+                  <button className="name linkish" onClick={() => go('clients', { profile: w.client_id })}>{t('overview.finished', { name: byId[w.client_id]?.name || '', day: w.day_title || '' })}</button>
+                  <div className="meta">{fmtRelative(w.finished_at, locale)} · {w.minutes} {t('common.minutes')}{w.exercise_logs?.length ? ` · ${w.exercise_logs.filter((x) => x.kg != null).slice(0, 3).map((x) => `${x.exercise} ${fmtKg(x.kg)} kg`).join(' · ')}` : ''}</div>
+                  {w.note && <div className="feed-note">“{w.note}”</div>}
+                </div>
+                <span className="pill ok">{t('common.done')}</span>
+              </div>
+            ))}
+          </div>
           {pending.length > 0 && (
             <>
               <div className="panel-h"><h2>{t('overview.confirmPayments')}</h2><span className="pill info">{pending.length}</span></div>
@@ -229,24 +241,26 @@ export default function Overview({ data, reload, go, trainerId }) {
                 <span className={`pill ${p.cls}`}>{t(`payState.${p.key}`, { n: p.n, date: fmtDate(p.date, locale) })}</span>
               </div>) })}
           </div>
-          {low.length > 0 && (
+          {ending.length > 0 && (
             <>
-              <div className="panel-h" style={{ marginTop: 18 }}><h2>{t('overview.packsLow')}</h2></div>
+              <div className="panel-h" style={{ marginTop: 18 }}><h2>{t('overview.packEnds')}</h2><span className="pill warn">{ending.length}</span></div>
               <div className="list">
-                {low.map((c) => (
+                {ending.map((c) => { const st = packs[c.id]; return (
                   <div className="row" key={c.id}>
-                    <div><div className="name">{c.name}</div><div className="meta">{t('overview.left', { left: sessionsLeft(c), total: c.sessions_total })}</div></div>
-                    <span className="pill warn">{t('overview.renewal')}</span>
-                  </div>
-                ))}
+                    <div style={{ minWidth: 0 }}><button className="name linkish" onClick={() => go('clients', { profile: c.id })}>{c.name}</button>
+                      <div className="meta">{st.kind === 'last'
+                        ? t('overview.lastOfPack', { when: `${fmtDate(ymd(new Date(st.session.starts_at)), locale, { weekday: 'short', day: 'numeric', month: 'short' })}, ${hm(new Date(st.session.starts_at))}` })
+                        : st.kind === 'used' ? t('overview.packUsed') : t('overview.fewLeft', { n: st.left })}</div></div>
+                    <span className="pill info">{t('overview.reminderOn')}</span>
+                  </div>) })}
               </div>
             </>
           )}
         </section>
       </div>
       {mobile && <div style={{ marginTop: 14 }}>{kpis}</div>}
-      <SessionLog session={logFor} clientName={logFor ? byId[logFor.client_id]?.name : ''} trainerId={trainerId}
-        onClose={() => setLogFor(null)} onSaved={() => setLogFor(null)} />
+      <ProgramLog session={logFor} client={logFor ? byId[logFor.client_id] : null} trainerId={trainerId} go={go}
+        onClose={() => setLogFor(null)} onSaved={() => { setLogFor(null); load(); reload() }} />
       <Modal open={!!askFor} title={t('overview.whatHappened')} onClose={() => setAskFor(null)}>
         {askFor && (
           <div className="grid" style={{ gap: 10 }}>

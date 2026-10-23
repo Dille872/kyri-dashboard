@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { TrendingUp, Trophy, CalendarCheck } from 'lucide-react'
 import { supabase } from '../supabase.js'
 import { useI18n } from '../i18n.jsx'
-import { kgValue } from './ExerciseRows.jsx'
 import { fmtDate, ymd } from '../lib/format.js'
 
 const WEEKS = 8
@@ -13,42 +12,42 @@ export function useProgress(clientId) {
   useEffect(() => {
     if (!clientId) return
     let alive = true
-    const since = new Date(Date.now() - WEEKS * 7 * 864e5).toISOString()
+    const since = new Date(Date.now() - WEEKS * 7 * 864e5)
     Promise.all([
-      supabase.from('sessions').select('id, starts_at, status, exercise_rows(exercise, kg, actual_kg)').eq('client_id', clientId)
-        .gte('starts_at', since).lte('starts_at', new Date().toISOString()).order('starts_at'),
-    ]).then(([{ data }]) => {
+      supabase.from('sessions').select('id, starts_at, status').eq('client_id', clientId)
+        .gte('starts_at', since.toISOString()).lte('starts_at', new Date().toISOString()).order('starts_at'),
+      supabase.from('workout_logs').select('id, finished_at').eq('client_id', clientId).gte('finished_at', since.toISOString()),
+      // kg history: gym logs by Kyri, online sessions by the client (imports from the notes count too)
+      supabase.from('exercise_logs').select('exercise, kg, logged_on, created_at').eq('client_id', clientId).not('kg', 'is', null).order('logged_on'),
+    ]).then(([{ data: ss }, { data: wl }, { data: logs }]) => {
       if (!alive) return
-      const list = data || []
+      const list = ss || []
       const counted = list.filter((s) => ['done', 'no_show', 'late_cancel'].includes(s.status))
-      const done = list.filter((s) => s.status === 'done')
-      // per exercise: best kg per session, in time order
+      const done = list.filter((s) => s.status === 'done').length + (wl || []).length
       const series = {}
-      for (const s of done) {
-        for (const r of s.exercise_rows || []) {
-          const v = kgValue(r.actual_kg ?? r.kg)
-          if (v == null) continue
-          const key = r.exercise.trim()
-          const arr = (series[key] ||= [])
-          const last = arr[arr.length - 1]
-          if (last && last.id === s.id) last.v = Math.max(last.v, v)
-          else arr.push({ id: s.id, date: s.starts_at, v, added: /^\+/.test(String(r.actual_kg ?? r.kg)) })
-        }
+      for (const l of logs || []) {
+        const key = l.exercise.trim()
+        const arr = (series[key.toLowerCase()] ||= { name: key, pts: [] }).pts
+        const last = arr[arr.length - 1]
+        const v = Number(l.kg)
+        if (last && last.date === l.logged_on) last.v = Math.max(last.v, v)
+        else arr.push({ date: l.logged_on, v })
       }
-      const exercises = Object.entries(series)
-        .filter(([, a]) => a.length >= 2 && a.some((x) => x.v > 0))
-        .map(([name, a]) => {
+      const exercises = Object.values(series)
+        .filter((e) => e.pts.length >= 2 && e.pts.some((x) => x.v > 0))
+        .map(({ name, pts: a }) => {
           const first = a[0].v, last = a[a.length - 1].v, max = Math.max(...a.map((x) => x.v))
           const prevMax = Math.max(...a.slice(0, -1).map((x) => x.v))
           return { name, points: a, first, last, delta: last - first, pct: first > 0 ? Math.round(((last - first) / first) * 100) : null,
-            added: a[a.length - 1].added, record: last === max && last > prevMax, recordDate: a[a.length - 1].date }
+            record: last === max && last > prevMax, recordDate: a[a.length - 1].date }
         })
-        .sort((x, y) => y.points.length - x.points.length || y.delta - x.delta)
-        .slice(0, 4)
+        .sort((x, y) => y.delta - x.delta || y.points.length - x.points.length)
+        .slice(0, 5)
       const record = exercises.filter((e) => e.record).sort((a, b) => b.recordDate.localeCompare(a.recordDate))[0] || null
-      const weeks = done.length ? Math.max(1, Math.round((Date.now() - new Date(done[0].starts_at)) / (7 * 864e5))) : 0
-      setP({ exercises, record, done: done.length, counted: counted.length, weeks,
-        attendance: counted.length ? Math.round((done.length / counted.length) * 100) : null })
+      const firstDone = list.find((s) => s.status === 'done')
+      const weeks = firstDone ? Math.max(1, Math.round((Date.now() - new Date(firstDone.starts_at)) / (7 * 864e5))) : WEEKS
+      setP({ exercises, record, done, counted: counted.length + (wl || []).length, weeks,
+        attendance: counted.length ? Math.round((list.filter((s) => s.status === 'done').length / counted.length) * 100) : null })
     })
     return () => { alive = false }
   }, [clientId])
@@ -84,7 +83,7 @@ export default function Progress({ clientId, forClient = false }) {
       <div className="prog-stats">
         <div className="prog-stat"><CalendarCheck /><div><b>{p.done}</b><span>{t('progress.sessions', { weeks: p.weeks || WEEKS })}</span></div></div>
         {p.attendance != null && <div className="prog-stat"><TrendingUp /><div><b>{p.attendance} %</b><span>{t('progress.attendance')}</span></div></div>}
-        {p.record && <div className="prog-stat rec"><Trophy /><div><b>{p.record.name}</b><span>{t('progress.record', { kg: (p.record.added ? '+' : '') + kg(p.record.last), date: fmtDate(ymd(new Date(p.record.recordDate)), locale) })}</span></div></div>}
+        {p.record && <div className="prog-stat rec"><Trophy /><div><b>{p.record.name}</b><span>{t('progress.record', { kg: kg(p.record.last), date: fmtDate(p.record.recordDate, locale) })}</span></div></div>}
       </div>
       {p.exercises.length > 0 && (
         <div className="prog-list">
@@ -93,11 +92,11 @@ export default function Progress({ clientId, forClient = false }) {
               <div style={{ minWidth: 0 }}>
                 <div className="name">{e.name}</div>
                 <div className="meta">
-                  {(e.first === 0 ? 'BW' : (e.added ? '+' : '') + kg(e.first))} → {(e.added ? '+' : '') + kg(e.last)}
+                  {kg(e.first)} → {kg(e.last)}
                 </div>
               </div>
               <Spark points={e.points} />
-              <span className={`pill ${e.delta > 0 ? 'ok' : 'mute'}`}>{e.delta > 0 ? '+' : ''}{e.pct != null && !e.added ? `${e.pct} %` : kg(e.delta)}</span>
+              <span className={`pill ${e.delta > 0 ? 'ok' : 'mute'}`}>{e.delta > 0 ? '+' : ''}{e.pct != null ? `${e.pct} %` : kg(e.delta)}</span>
             </div>
           ))}
         </div>

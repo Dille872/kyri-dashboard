@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeft, ChevronRight, Plus, Video, Repeat } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Video, Repeat, Dumbbell } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { Modal, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
-import { ExerciseRows, fromDb, rowText, saveRows } from '../../components/ExerciseRows.jsx'
+import ProgramLog from '../../components/ProgramLog.jsx'
 import { addDays, fmtDate, hm, isoDow, isoWeek, money, mondayOf, toIso, weekdayName, ymd } from '../../lib/format.js'
 
 export const KINDS = ['strength', 'mobility', 'conditioning', 'own']
 
-export default function Calendar({ data, reload, trainerId }) {
+export default function Calendar({ data, reload, trainerId, go }) {
   const { t, locale } = useI18n()
   const run = useRun()
   const today = ymd()
@@ -70,7 +70,7 @@ export default function Calendar({ data, reload, trainerId }) {
           </div>
         </section>
         <button className="fab" onClick={() => setEdit({ isNew: true, date: day })} aria-label={t('calendar.newSession')}><Plus /></button>
-        <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId}
+        <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId} go={go}
           onSaved={() => { setEdit(null); load(); reload() }} />
       </>
     )
@@ -124,26 +124,23 @@ export default function Calendar({ data, reload, trainerId }) {
         <span style={{ '--c': 'var(--warn)' }}><i />{t('calendar.paymentDue')}</span>
       </div>
 
-      <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId}
+      <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId} go={go}
         onSaved={() => { setEdit(null); load(); reload() }} />
     </>
   )
 }
 
-function SessionModal({ edit, onClose, clients, trainerId, onSaved }) {
+function SessionModal({ edit, onClose, clients, trainerId, onSaved, go }) {
   const { t, locale } = useI18n()
   const run = useRun()
   const toast = useToast()
   const [f, setF] = useState(null)
   const [confirmDel, setConfirmDel] = useState(null)       // 'one' | 'series'
-  const [rows, setRows] = useState([])
-  const [origRows, setOrigRows] = useState([])
   const [note, setNote] = useState('')
-  const [last, setLast] = useState(undefined)              // undefined = loading, null = none
-  const [suggest, setSuggest] = useState([])
+  const [logOpen, setLogOpen] = useState(false)
 
   useEffect(() => {
-    setConfirmDel(null); setRows([]); setOrigRows([]); setNote(''); setLast(undefined)
+    setConfirmDel(null); setNote(''); setLogOpen(false)
     if (!edit) return setF(null)
     if (edit.isNew) {
       setF({ client_id: '', date: edit.date, time: '18:00', duration_min: 60, kind: 'strength', format: 'gym', meeting_url: '', location: '', notes: '',
@@ -156,20 +153,8 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved }) {
   }, [edit]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadLog(s) {
-    const [mine, note, prev, names] = await Promise.all([
-      supabase.from('exercise_rows').select('*').eq('session_id', s.id).order('position'),
-      supabase.from('session_notes').select('note').eq('session_id', s.id).maybeSingle(),
-      supabase.from('sessions').select('id, starts_at').eq('client_id', s.client_id).lt('starts_at', s.starts_at).order('starts_at', { ascending: false }).limit(12),
-      supabase.from('exercise_rows').select('exercise').eq('trainer_id', trainerId).limit(500),
-    ])
-    const r = (mine.data || []).map(fromDb)
-    setRows(r); setOrigRows(r); setNote(note.data?.note || '')
-    setSuggest([...new Set((names.data || []).map((x) => x.exercise))].sort())
-    const ids = (prev.data || []).map((x) => x.id)
-    if (!ids.length) return setLast(null)
-    const { data: prevRows } = await supabase.from('exercise_rows').select('*').in('session_id', ids).order('position')
-    const firstWith = (prev.data || []).find((p) => (prevRows || []).some((r) => r.session_id === p.id))
-    setLast(firstWith ? { date: firstWith.starts_at, rows: prevRows.filter((r) => r.session_id === firstWith.id) } : null)
+    const { data: n } = await supabase.from('session_notes').select('note').eq('session_id', s.id).maybeSingle()
+    setNote(n?.note || '')
   }
 
   if (!f || !edit) return <Modal open={false} onClose={onClose} />
@@ -210,8 +195,6 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved }) {
     const r = edit.isNew ? await run(supabase.from('sessions').insert(row)) : await run(supabase.from('sessions').update(row).eq('id', edit.id))
     if (!r.ok) return
     if (!edit.isNew && f.client_id) {
-      const res = await saveRows({ original: origRows, rows, base: { trainer_id: trainerId, client_id: f.client_id, session_id: edit.id } })
-      if (res.error) return toast(t('common.errorGeneric', { msg: res.error.message }), 'err')
       const n = await run(supabase.from('session_notes').upsert({ session_id: edit.id, trainer_id: trainerId, note, updated_at: new Date().toISOString() }))
       if (!n.ok) return
     }
@@ -227,7 +210,8 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved }) {
   }
 
   return (
-    <Modal open={!!edit} wide={!edit.isNew && !!f.client_id} title={edit.isNew ? t('calendar.newSession') : t('calendar.editSession')} onClose={onClose}>
+    <>
+    <Modal open={!!edit} title={edit.isNew ? t('calendar.newSession') : t('calendar.editSession')} onClose={onClose}>
       <form className="form" onSubmit={save}>
         <div className="row2">
           <label className="f" htmlFor="s-client">{t('calendar.client')}
@@ -286,17 +270,10 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved }) {
               </div>
             </div>
             <div className="section">
-              <h2>{t('calendar.log')}</h2>
-              {last === undefined ? null : last === null ? <div className="meta">{t('calendar.noLast')}</div> : (
-                <div className="last">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <b>{t('calendar.lastTime', { date: fmtDate(ymd(new Date(last.date)), locale) })}</b>
-                    {rows.length === 0 && <button type="button" className="chip" onClick={() => setRows(last.rows.map((r) => ({ ...fromDb(r), kg: r.actual_kg || r.kg || '', reps: r.actual_reps || r.reps || '', actual_kg: null, actual_reps: null, done: false, id: undefined, key: Math.random().toString(36).slice(2) })))}>{t('calendar.copyLast')}</button>}
-                  </div>
-                  <ul>{last.rows.map((r) => <li key={r.id}>{r.exercise} · {rowText(r, true)}</li>)}</ul>
-                </div>
-              )}
-              <ExerciseRows rows={rows} setRows={setRows} showActual idPrefix="sess" suggestions={suggest} />
+              <div className="acts" style={{ justifyContent: 'space-between' }}>
+                <h2>{t('calendar.log')}</h2>
+                <button type="button" className="btn ghost small" onClick={() => setLogOpen(true)}><Dumbbell />{t('profile.log')}</button>
+              </div>
               <label className="f" htmlFor="s-private">{t('calendar.privateNote')}<textarea id="s-private" rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></label>
             </div>
           </>
@@ -311,5 +288,8 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved }) {
         </div>
       </form>
     </Modal>
+    {logOpen && <ProgramLog session={edit} client={clients.find((c) => c.id === edit.client_id)} trainerId={trainerId} go={go}
+      onClose={() => setLogOpen(false)} onSaved={() => { setLogOpen(false); onSaved() }} />}
+    </>
   )
 }

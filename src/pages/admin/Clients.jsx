@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Copy } from 'lucide-react'
+import { Plus, Copy, Archive, RotateCcw } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { DICTS, LANGS, useI18n } from '../../i18n.jsx'
 import { Modal, copyText, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
@@ -10,13 +10,32 @@ export default function Clients({ data, reload, trainerId, go }) {
   const { t, locale } = useI18n()
   const toast = useToast()
   const [edit, setEdit] = useState(null)
-  const [showInactive, setShowInactive] = useState(false)
-  const [profileId, setProfileId] = useState(null)
+  const [tab, setTab] = useState('active')
+  const [q, setQ] = useState('')
+  const [parq, setParq] = useState({})        // client_id → latest PAR-Q answer
+  const [profileId, setProfileId] = useState(() => {
+    try { const id = sessionStorage.getItem('clients-profile'); sessionStorage.removeItem('clients-profile'); return id } catch { return null }
+  })
+  const run = useRun()
   const mobile = useIsMobile()
   const today = ymd()
   const pendingIds = new Set(data.pending.map((p) => p.client_id))
   const pkById = Object.fromEntries(data.packages.map((p) => [p.id, p]))
-  const list = data.clients.filter((c) => showInactive || c.active)
+  const act = data.clients.filter((c) => c.active), arc = data.clients.filter((c) => !c.active)
+  const list = (tab === 'active' ? act : arc).filter((c) => !q.trim() || `${c.name} ${c.email}`.toLowerCase().includes(q.trim().toLowerCase()))
+  useEffect(() => {
+    supabase.from('parq_responses').select('client_id, flagged, reviewed_at, created_at').eq('trainer_id', trainerId).order('created_at')
+      .then(({ data: d }) => setParq(Object.fromEntries((d || []).map((r) => [r.client_id, r]))))
+  }, [trainerId, data.clients])
+  const parqPill = (c) => {
+    const r = parq[c.id]
+    if (!c.parq_at || !r) return <span className="pill mute">{t('clients.parqNone')}</span>
+    return r.flagged && !r.reviewed_at ? <span className="pill bad">{t('clients.parqCheck')}</span> : <span className="pill ok">{t('clients.parqOk')}</span>
+  }
+  async function setArchived(c, archived) {
+    const r = await run(supabase.from('clients').update({ active: !archived, archived_at: archived ? new Date().toISOString() : null }).eq('id', c.id))
+    if (r.ok) { toast(t(archived ? 'clients.archivedToast' : 'clients.reactivatedToast', { name: c.name })); reload() }
+  }
 
   async function invite(c) {
     const dict = { name: c.name.split(' ')[0], brand: data.trainer.brand_name, url: window.location.origin, email: c.email }
@@ -30,8 +49,8 @@ export default function Clients({ data, reload, trainerId, go }) {
   const profileClient = data.clients.find((c) => c.id === profileId)
   if (profileClient) return (
     <>
-      <ClientProfile client={profileClient} data={data} trainerId={trainerId} go={go}
-        onBack={() => setProfileId(null)} onEdit={setEdit} onInvite={invite} />
+      <ClientProfile client={profileClient} data={data} trainerId={trainerId} go={go} reload={reload}
+        onBack={() => setProfileId(null)} onEdit={setEdit} onInvite={invite} onArchive={setArchived} />
       {modal}
     </>
   )
@@ -40,43 +59,53 @@ export default function Clients({ data, reload, trainerId, go }) {
     <>
       <div className="head">
         <div><div className="eyebrow">{data.trainer.brand_name}</div><h1>{t('clients.title')}</h1>
-          <p className="sub">{t('clients.subtitle', { n: data.clients.filter((c) => c.active).length })}</p></div>
+          <p className="sub">{t('clients.subtitle2')}</p></div>
         <div className="acts">
-          <label className="check-row" htmlFor="show-inactive"><input id="show-inactive" type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />{t('clients.showInactive')}</label>
           <button className="btn" onClick={() => setEdit({ isNew: true })}><Plus />{t('clients.add')}</button>
         </div>
       </div>
+      <div className="tabs">
+        <div className="seg" role="group" aria-label={t('clients.title')}>
+          <button aria-pressed={tab === 'active'} onClick={() => setTab('active')}>{t('clients.tabActive', { n: act.length })}</button>
+          <button aria-pressed={tab === 'archived'} onClick={() => setTab('archived')}>{t('clients.tabArchived', { n: arc.length })}</button>
+        </div>
+        <input className="search" type="search" placeholder={t('clients.search')} aria-label={t('clients.search')} value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
       <div className="panel">
-        {list.length === 0 ? <div className="empty">{t('clients.empty')}</div> : mobile ? (
+        {list.length === 0 ? <div className="empty">{q ? t('clients.noMatch') : tab === 'archived' ? t('clients.emptyArchived') : t('clients.empty')}</div> : mobile ? (
           <div className="list">
             {list.map((c) => {
               const p = payState(c, pendingIds, today); const left = sessionsLeft(c)
               return (
                 <button key={c.id} className="row mrow" onClick={() => { setProfileId(c.id); window.scrollTo(0, 0) }}>
                   <div style={{ minWidth: 0, textAlign: 'left' }}>
-                    <div className="name">{c.name}{!c.active && <span className="tag" style={{ marginLeft: 6 }}>{t('clients.inactive')}</span>}</div>
+                    <div className="name">{c.name}</div>
                     <div className="meta">{t(`modes.${c.mode || 'gym'}`)} · {left == null ? t('clients.unlimited') : `${left}/${c.sessions_total}`} · {money(c.price, locale)}</div>
+                    {!c.active && c.archived_at && <div className="meta">{t('clients.archivedOn', { date: fmtDate(ymd(new Date(c.archived_at)), locale) })}</div>}
                   </div>
-                  <span className={`pill ${p.cls}`}>{t(`payState.${p.key}`, { n: p.n, date: fmtDate(p.date, locale) })}</span>
+                  <div className="stack-pills">{c.active && <span className={`pill ${p.cls}`}>{t(`payState.${p.key}`, { n: p.n, date: fmtDate(p.date, locale) })}</span>}{parqPill(c)}</div>
                 </button>
               )
             })}
           </div>
         ) : (
           <div className="tbl-wrap"><table>
-            <thead><tr><th>{t('clients.name')}</th><th>{t('clients.package')}</th><th>{t('clients.sessionsLeft')}</th><th>{t('clients.price')}</th><th>{t('clients.nextDue')}</th><th>{t('clients.status')}</th><th /></tr></thead>
+            <thead><tr><th>{t('clients.name')}</th><th>{t('clients.package')}</th><th>{t('clients.sessionsLeft')}</th><th>{t('clients.price')}</th><th>{t('clients.status')}</th><th>PAR-Q</th><th /></tr></thead>
             <tbody>
               {list.map((c) => {
                 const p = payState(c, pendingIds, today); const left = sessionsLeft(c)
                 return (
                   <tr key={c.id} className="click" onClick={() => { setProfileId(c.id); window.scrollTo(0, 0) }}>
-                    <td><div className="name">{c.name}{!c.active && <span className="tag" style={{ marginLeft: 6 }}>{t('clients.inactive')}</span>}</div><div className="meta">{c.email}</div></td>
+                    <td><div className="name">{c.name}</div><div className="meta">{!c.active && c.archived_at ? t('clients.archivedOn', { date: fmtDate(ymd(new Date(c.archived_at)), locale) }) : c.email}</div></td>
                     <td>{pkById[c.package_id]?.name || t('clients.noPackage')}<div className="meta">{t(`modes.${c.mode || 'gym'}`)} · {t(`billing.${c.billing}`)}</div></td>
                     <td className="num">{left == null ? t('clients.unlimited') : <>{left} / {c.sessions_total}<div className="bar"><i style={{ width: `${Math.min(100, (left / Math.max(c.sessions_total, 1)) * 100)}%` }} /></div></>}</td>
                     <td className="num">{money(c.price, locale)}</td>
-                    <td className="num">{c.next_due_date ? fmtDate(c.next_due_date, locale) : '–'}</td>
-                    <td><span className={`pill ${p.cls}`}>{t(`payState.${p.key}`, { n: p.n, date: fmtDate(p.date, locale) })}</span></td>
-                    <td onClick={(e) => e.stopPropagation()}><button className="chip" onClick={() => invite(c)} title={t('clients.copyInvite')}><Copy size={13} style={{ verticalAlign: '-2px' }} /> {t('clients.copyInvite')}</button></td>
+                    <td>{c.active ? <span className={`pill ${p.cls}`}>{t(`payState.${p.key}`, { n: p.n, date: fmtDate(p.date, locale) })}</span> : <span className="pill mute">{t('clients.inactive')}</span>}</td>
+                    <td>{parqPill(c)}</td>
+                    <td onClick={(e) => e.stopPropagation()}><div className="acts" style={{ flexWrap: 'nowrap' }}>
+                      {c.active && <button className="chip" onClick={() => invite(c)} title={t('clients.copyInvite')}><Copy size={13} style={{ verticalAlign: '-2px' }} /> {t('clients.copyInvite')}</button>}
+                      <button className="chip" onClick={() => setArchived(c, c.active)}>{c.active ? <><Archive size={13} style={{ verticalAlign: '-2px' }} /> {t('clients.archive')}</> : <><RotateCcw size={13} style={{ verticalAlign: '-2px' }} /> {t('clients.reactivate')}</>}</button>
+                    </div></td>
                   </tr>
                 )
               })}
@@ -121,8 +150,8 @@ function ClientModal({ edit, onClose, data, trainerId, onSaved, onInvite }) {
       trainer_id: trainerId, name: f.name.trim(), email: f.email.trim().toLowerCase(), phone: f.phone || null, lang: f.lang,
       package_id: f.package_id || null, price: Number(f.price) || 0, billing: f.billing,
       sessions_total: f.sessions_total === '' ? null : Number(f.sessions_total), sessions_used: Number(f.sessions_used) || 0,
-      next_due_date: f.next_due_date || null, active: f.active,
-      mode: f.mode, checkin_weekday: f.mode === 'gym' || f.checkin_weekday === '' ? null : Number(f.checkin_weekday), show_training: f.show_training,
+      next_due_date: f.next_due_date || null,
+      mode: f.mode,
     }
     const r = edit.isNew ? await run(supabase.from('clients').insert(row)) : await run(supabase.from('clients').update(row).eq('id', edit.id))
     if (r.ok) { toast(t('common.saved')); onSaved() }
@@ -141,13 +170,7 @@ function ClientModal({ edit, onClose, data, trainerId, onSaved, onInvite }) {
         <div className="row2">
           <label className="f" htmlFor="c-mode">{t('clients.mode')}
             <select id="c-mode" value={f.mode} onChange={set('mode')}>{['gym', 'online', 'hybrid'].map((m) => <option key={m} value={m}>{t(`modes.${m}`)}</option>)}</select></label>
-          {f.mode !== 'gym' ? (
-            <label className="f" htmlFor="c-checkin">{t('clients.checkin')}
-              <select id="c-checkin" value={f.checkin_weekday} onChange={set('checkin_weekday')}>
-                <option value="">{t('clients.checkinNone')}</option>
-                {[1, 2, 3, 4, 5, 6, 7].map((n) => <option key={n} value={n}>{weekdayName(n, locale)}</option>)}
-              </select></label>
-          ) : <span />}
+          <span />
         </div>
         <div className="row2">
           <label className="f" htmlFor="c-pkg">{t('clients.package')}
@@ -164,9 +187,6 @@ function ClientModal({ edit, onClose, data, trainerId, onSaved, onInvite }) {
           <label className="f" htmlFor="c-used">{t('clients.sessionsUsed')}<input id="c-used" type="number" min="0" value={f.sessions_used} onChange={set('sessions_used')} /></label>
         </div>
         <label className="f" htmlFor="c-due">{t('clients.nextDue')}<input id="c-due" type="date" value={f.next_due_date} onChange={set('next_due_date')} /><small>{t('clients.nextDueHelp')}</small></label>
-        <label className="check-row" htmlFor="c-show"><input id="c-show" type="checkbox" checked={f.show_training} onChange={set('show_training')} />{t('clients.showTraining')}</label>
-        <div className="meta" style={{ marginTop: -8 }}>{t('clients.showTrainingHelp')}</div>
-        <label className="check-row" htmlFor="c-active"><input id="c-active" type="checkbox" checked={f.active} onChange={set('active')} />{t('clients.active')}</label>
         <div className="modal-foot">
           {!edit.isNew && onInvite && <button type="button" className="btn ghost small" onClick={() => onInvite(edit)}>{t('clients.copyInvite')}</button>}
           <span className="spacer" />

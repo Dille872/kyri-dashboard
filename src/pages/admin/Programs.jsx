@@ -1,150 +1,340 @@
-import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeft, ChevronRight, Plus, Copy, Check } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ArrowLeft, ClipboardPaste, Copy, Pencil, Plus, Trash2, Video } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
-import { useRun, useToast } from '../../components/ui.jsx'
-import { ExerciseRows, fromDb, rowText, saveRows } from '../../components/ExerciseRows.jsx'
-import { addDays, fmtDate, fmtRelative, isoWeek, mondayOf, weekdayName, ymd } from '../../lib/format.js'
+import { Modal, Spinner, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
+import ProgramDay from '../../components/ProgramDay.jsx'
+import { MediaModal, useLibrary } from '../../components/ExerciseMedia.jsx'
+import { blocksToText, exKey, historyByExercise, parseDayText, parseNotes } from '../../lib/program.js'
+import { addDays, fmtDate, ymd } from '../../lib/format.js'
 
 const KEY = 'programs-client'
 
-export default function Programs({ data, trainerId }) {
-  const { t, locale } = useI18n()
-  const run = useRun()
-  const toast = useToast()
-  const online = data.clients.filter((c) => c.active && c.mode && c.mode !== 'gym').sort((a, b) => (a.mode === 'online' ? 0 : 1) - (b.mode === 'online' ? 0 : 1) || a.name.localeCompare(b.name))
-  const [clientId, setClientId] = useState(() => {
-    let s = null; try { s = sessionStorage.getItem(KEY) } catch {}
-    return online.find((c) => c.id === s)?.id || online[0]?.id || ''
-  })
-  const [monday, setMonday] = useState(mondayOf(ymd()))
-  const [workouts, setWorkouts] = useState(null)
-  const [log, setLog] = useState([])
-  const [suggest, setSuggest] = useState([])
+// Programs replace the weekly planning: days that repeat, like Kyri's notes.
+export default function Programs({ data, trainerId, go }) {
+  const { t } = useI18n()
+  const mobile = useIsMobile()
+  const [list, setList] = useState(null)       // programs of all clients (light)
+  const [clientId, setClientId] = useState(() => { try { return sessionStorage.getItem(KEY) || '' } catch { return '' } })
+  const [lib, reloadLib] = useLibrary(trainerId)
+
+  const loadList = useCallback(async () => {
+    const { data: p } = await supabase.from('programs').select('id, client_id, title, program_days(id)').eq('trainer_id', trainerId)
+    setList(p || [])
+  }, [trainerId])
+  useEffect(() => { loadList() }, [loadList])
+  useEffect(() => { try { clientId ? sessionStorage.setItem(KEY, clientId) : sessionStorage.removeItem(KEY) } catch {} }, [clientId])
+  // desktop: open the first program right away
+  useEffect(() => { if (!mobile && list && !clientId && list[0]) setClientId(list[0].client_id) }, [mobile, list, clientId])
+
+  if (!list) return <Spinner />
+  const byClient = Object.fromEntries(list.map((p) => [p.client_id, p]))
+  const withProg = data.clients.filter((c) => byClient[c.id]).sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name))
+  const need = data.clients.filter((c) => c.active && !byClient[c.id])
   const client = data.clients.find((c) => c.id === clientId)
 
-  const load = useCallback(async () => {
-    if (!clientId) return
-    const [w, s, names] = await Promise.all([
-      run(supabase.from('plan_workouts').select('*, exercise_rows(*)').eq('client_id', clientId).eq('week_start', monday).order('position')),
-      run(supabase.from('sessions').select('id, starts_at, kind, exercise_rows(*)').eq('client_id', clientId).eq('status', 'done').order('starts_at', { ascending: false }).limit(15)),
-      supabase.from('exercise_rows').select('exercise').eq('trainer_id', trainerId).limit(500),
-    ])
-    if (w.ok) setWorkouts(w.data.map((x) => ({ ...x, rows: (x.exercise_rows || []).sort((a, b) => a.position - b.position).map(fromDb) })))
-    if (s.ok) setLog(s.data.filter((x) => x.exercise_rows?.length).slice(0, 6))
-    setSuggest([...new Set((names.data || []).map((x) => x.exercise))].sort())
-  }, [clientId, monday, run, trainerId])
-  useEffect(() => { load() }, [load])
-  useEffect(() => { try { sessionStorage.setItem(KEY, clientId) } catch {} }, [clientId])
-
-  async function addWorkout() {
-    const n = (workouts?.length || 0)
-    const r = await run(supabase.from('plan_workouts').insert({ trainer_id: trainerId, client_id: clientId, week_start: monday,
-      title: `${t('programs.newWorkout').slice(0, -1)}${String.fromCharCode(65 + n)}`, position: n + 1 }))
-    if (r.ok) load()
-  }
-  async function copyNext() {
-    const r = await run(supabase.rpc('copy_plan_week', { p_client: clientId, p_from: monday, p_to: addDays(monday, 7) }))
-    if (r.ok) { toast(t('programs.copied', { n: r.data })); setMonday(addDays(monday, 7)) }
+  async function create(c) {
+    const first = c.name.split(' ')[0]
+    const { data: p, error } = await supabase.from('programs').insert({ trainer_id: trainerId, client_id: c.id, title: t('prog.newTitle', { name: first }) }).select().single()
+    if (error) return
+    await supabase.from('program_days').insert({ program_id: p.id, trainer_id: trainerId, position: 1, title: 'Day 1', blocks: [] })
+    await loadList(); setClientId(c.id)
   }
 
-  if (!online.length) return (
-    <>
-      <div className="head"><div><div className="eyebrow">{t('modes.online')}</div><h1>{t('programs.title')}</h1><p className="sub">{t('programs.subtitle')}</p></div></div>
-      <div className="panel"><div className="empty">{t('programs.noOnline')}</div></div>
-    </>
+  const listPanel = (
+    <section className="panel prog-list-panel" style={{ alignSelf: 'start' }}>
+      <div className="panel-h"><h2>{t('prog.withProgram')}</h2><span className="tag">{withProg.length}</span></div>
+      <div className="list">
+        {withProg.length === 0 && <div className="empty">{t('prog.none')}</div>}
+        {withProg.map((c) => (
+          <button key={c.id} className="row mrow pick" aria-current={c.id === clientId} onClick={() => { setClientId(c.id); window.scrollTo(0, 0) }}>
+            <div style={{ minWidth: 0, textAlign: 'left' }}><div className="name">{c.name}</div>
+              <div className="meta">{c.mode !== 'gym' ? <span className="fmt"><Video />{t('formats.online')}</span> : t('formats.gym')} · {t(byClient[c.id].program_days.length === 1 ? 'prog.dayCount1' : 'prog.dayCount', { n: byClient[c.id].program_days.length })}{!c.active ? ` · ${t('clients.inactive')}` : ''}</div></div>
+          </button>
+        ))}
+      </div>
+      {need.length > 0 && (
+        <>
+          <div className="panel-h" style={{ marginTop: 18 }}><h2>{t('prog.need')}</h2><span className="pill warn">{need.length}</span></div>
+          <div className="list">
+            {need.map((c) => (
+              <div className="row" key={c.id}>
+                <div style={{ minWidth: 0 }}><div className="name">{c.name}</div><div className="meta">{t(`modes.${c.mode || 'gym'}`)}</div></div>
+                <button className="chip solid" onClick={() => create(c)}><Plus size={12} style={{ verticalAlign: '-2px' }} /> {t('prog.create')}</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   )
+
+  const editor = client && byClient[client.id]
+    ? <Editor key={client.id} client={client} data={data} trainerId={trainerId} lib={lib} reloadLib={reloadLib}
+        onChanged={loadList} onBack={mobile ? () => setClientId('') : null} onOpen={(id) => setClientId(id)} go={go} />
+    : null
 
   return (
     <>
-      <div className="head">
-        <div><div className="eyebrow">{t('programs.week', { n: isoWeek(monday) })} · {fmtDate(monday, locale)} – {fmtDate(addDays(monday, 6), locale)}</div>
-          <h1>{t('programs.title')}</h1><p className="sub">{t('programs.subtitle')}</p></div>
-        <div className="acts">
-          <label className="f" htmlFor="p-client" style={{ minWidth: 200 }}>{t('programs.client')}
-            <select id="p-client" value={clientId} onChange={(e) => setClientId(e.target.value)}>{online.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+      {(!mobile || !editor) && (
+        <div className="head"><div><div className="eyebrow">{data.trainer.brand_name}</div><h1>{t('prog.title')}</h1><p className="sub">{t('prog.subtitle')}</p></div></div>
+      )}
+      {mobile ? (editor || listPanel) : (
+        <div className="prog-layout">
+          {listPanel}
+          <div style={{ minWidth: 0 }}>{editor || <div className="panel empty">{t('prog.noClient')}</div>}</div>
         </div>
-      </div>
-
-      <div className="grid two">
-        <section className="panel" style={{ alignSelf: 'start' }}>
-          <div className="panel-h">
-            <div><h2>{client?.name}</h2>
-              <div className="meta">{t(`modes.${client?.mode}`)} · {client?.checkin_weekday ? t('programs.checkin', { day: weekdayName(client.checkin_weekday, locale) }) : t('programs.noCheckin')}</div></div>
-            <div className="acts">
-              <button className="btn ghost small" onClick={() => setMonday(addDays(monday, -7))} aria-label={t('calendar.prev')}><ChevronLeft /></button>
-              <button className="btn ghost small" onClick={() => setMonday(mondayOf(ymd()))}>{t('calendar.today')}</button>
-              <button className="btn ghost small" onClick={() => setMonday(addDays(monday, 7))} aria-label={t('calendar.next')}><ChevronRight /></button>
-            </div>
-          </div>
-          <div className="wk">
-            {workouts && workouts.length === 0 && <div className="empty">{t('programs.emptyWeek')}</div>}
-            {(workouts || []).map((w) => <WorkoutCard key={w.id} w={w} trainerId={trainerId} suggest={suggest} onChanged={load} />)}
-          </div>
-          <div className="acts" style={{ justifyContent: 'flex-start', marginTop: 14 }}>
-            <button className="btn small" onClick={addWorkout}><Plus />{t('programs.addWorkout')}</button>
-            {workouts?.length > 0 && <button className="btn ghost small" onClick={copyNext} title={t('programs.copyHelp')}><Copy />{t('programs.copyNext')}</button>}
-          </div>
-          {workouts?.length > 0 && <div className="meta" style={{ marginTop: 6 }}>{t('programs.copyHelp')}</div>}
-        </section>
-
-        <section className="panel" style={{ alignSelf: 'start' }}>
-          <div className="panel-h"><h2>{t('programs.history')}</h2></div>
-          {log.length === 0 ? <div className="empty">{t('programs.noHistory')}</div> : (
-            <div className="log-list">
-              {log.map((s) => (
-                <div key={s.id} className="log-item">
-                  <div className="name">{fmtDate(ymd(new Date(s.starts_at)), locale, { weekday: 'short', day: 'numeric', month: 'short' })} <span className="meta">· {t(`kinds.${s.kind}`)}</span></div>
-                  <ul>{s.exercise_rows.sort((a, b) => a.position - b.position).map((r) => <li key={r.id}>{r.exercise} · {rowText(r, true)}</li>)}</ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+      )}
     </>
   )
 }
 
-function WorkoutCard({ w, trainerId, suggest, onChanged }) {
+function Editor({ client, data, trainerId, lib, reloadLib, onChanged, onBack, onOpen }) {
   const { t, locale } = useI18n()
   const run = useRun()
   const toast = useToast()
-  const [title, setTitle] = useState(w.title)
-  const [notes, setNotes] = useState(w.notes || '')
-  const [rows, setRows] = useState(w.rows)
-  const [confirmDel, setConfirmDel] = useState(false)
+  const [prog, setProg] = useState(null)
+  const [logs, setLogs] = useState([])
+  const [dayIdx, setDayIdx] = useState(0)
+  const [edit, setEdit] = useState(null)        // { title, focus, note, text }
+  const [media, setMedia] = useState(null)      // exercise name
+  const [importOpen, setImportOpen] = useState(false)
+  const [copyOpen, setCopyOpen] = useState(false)
+  const [nextId, setNextId] = useState(null)
+  const [confirm, setConfirm] = useState(null)
+  const [titleEdit, setTitleEdit] = useState(null)
 
-  async function save() {
-    const a = await run(supabase.from('plan_workouts').update({ title: title.trim() || w.title, notes: notes || null }).eq('id', w.id))
-    if (!a.ok) return
-    const res = await saveRows({ original: w.rows, rows, base: { trainer_id: trainerId, client_id: w.client_id, plan_workout_id: w.id } })
-    if (res.error) return toast(t('common.errorGeneric', { msg: res.error.message }), 'err')
-    toast(t('common.saved')); onChanged()
+  const load = useCallback(async () => {
+    const [p, l, n] = await Promise.all([
+      supabase.from('programs').select('*, program_days(*)').eq('client_id', client.id).maybeSingle(),
+      supabase.from('exercise_logs').select('exercise, kg, reps, logged_on, created_at, day_id, source').eq('client_id', client.id).order('logged_on'),
+      supabase.rpc('next_day_for', { p_client: client.id }),
+    ])
+    if (p.data) p.data.program_days.sort((a, b) => a.position - b.position)
+    setProg(p.data); setLogs(l.data || []); setNextId(n.data || null)
+  }, [client.id])
+  useEffect(() => { load() }, [load])
+
+  const history = useMemo(() => historyByExercise(logs), [logs])
+  if (!prog) return <Spinner />
+  const days = prog.program_days
+  const day = days[Math.min(dayIdx, days.length - 1)]
+  const lastLog = [...logs].filter((l) => l.day_id).sort((a, b) => (b.logged_on + b.created_at).localeCompare(a.logged_on + a.created_at))[0]
+  const lastDay = lastLog && days.find((d) => d.id === lastLog.day_id)
+  const nextDay = days.find((d) => d.id === nextId)
+
+  // kg found in pasted / typed text → history entries, one week apart, ending today
+  async function addImportLogs(kgs) {
+    const today = ymd()
+    const rows = kgs.flatMap(({ exercise, kg }) => kg.map((v, i) => ({
+      trainer_id: trainerId, client_id: client.id, exercise, kg: v, source: 'import', logged_on: addDays(today, -7 * (kg.length - 1 - i)),
+    })))
+    if (rows.length) await run(supabase.from('exercise_logs').insert(rows))
+    return rows.length
   }
-  async function del() {
-    if (!confirmDel) return setConfirmDel(true)
-    const r = await run(supabase.from('plan_workouts').delete().eq('id', w.id))
-    if (r.ok) onChanged()
+
+  function startEdit(d) {
+    setEdit({ id: d.id, title: d.title, focus: d.focus || '', note: d.note || '', text: blocksToText(d.blocks) })
+  }
+  async function saveDay() {
+    const parsed = parseDayText(edit.text)
+    const r = await run(supabase.from('program_days').update({ title: edit.title.trim() || day.title, focus: edit.focus.trim() || null, note: edit.note.trim() || null, blocks: parsed.blocks }).eq('id', edit.id))
+    if (!r.ok) return
+    await addImportLogs(parsed.kg)
+    setEdit(null); toast(t('prog.saved')); load(); onChanged()
+  }
+  async function addDay() {
+    const pos = (days[days.length - 1]?.position || 0) + 1
+    const r = await run(supabase.from('program_days').insert({ program_id: prog.id, trainer_id: trainerId, position: pos, title: `Day ${days.length + 1}`, blocks: [] }).select().single())
+    if (!r.ok) return
+    await load(); onChanged(); setDayIdx(days.length); startEdit(r.data)
+  }
+  async function deleteDay() {
+    if (confirm !== 'day') return setConfirm('day')
+    const r = await run(supabase.from('program_days').delete().eq('id', day.id))
+    if (r.ok) { setConfirm(null); setEdit(null); setDayIdx(0); load(); onChanged() }
+  }
+  async function deleteProgram() {
+    if (confirm !== 'program') return setConfirm('program')
+    const r = await run(supabase.from('programs').delete().eq('id', prog.id))
+    if (r.ok) { setConfirm(null); onChanged(); onBack?.() }
+  }
+  async function saveTitle() {
+    const r = await run(supabase.from('programs').update({ title: titleEdit.trim() || prog.title }).eq('id', prog.id))
+    if (r.ok) { setTitleEdit(null); load(); onChanged() }
   }
 
   return (
-    <div className={`wk-card ${w.completed_at ? 'done' : ''}`}>
-      <div className="row2">
-        <label className="f" htmlFor={`w-t-${w.id}`}>{t('programs.workoutTitle')}<input id={`w-t-${w.id}`} value={title} onChange={(e) => setTitle(e.target.value)} /></label>
-        <div style={{ alignSelf: 'end' }}>
-          {w.completed_at
-            ? <span className="pill ok"><Check size={12} /> {t('programs.completed', { when: fmtRelative(w.completed_at, locale) })}</span>
-            : <span className="pill mute">{t('programs.notDone')}</span>}
+    <>
+      {onBack && <button className="chip" onClick={onBack} style={{ marginBottom: 14 }}><ArrowLeft size={13} style={{ verticalAlign: '-2px' }} /> {t('prog.backToList')}</button>}
+      <div className="head" style={{ marginBottom: 16 }}>
+        <div style={{ minWidth: 0 }}>
+          <div className="eyebrow">{t('prog.onlyYou', { name: client.name })}</div>
+          {titleEdit != null ? (
+            <div className="acts" style={{ justifyContent: 'flex-start', marginTop: 8 }}>
+              <input aria-label={t('prog.programTitle')} value={titleEdit} onChange={(e) => setTitleEdit(e.target.value)} style={{ maxWidth: 340 }} />
+              <button className="chip solid" onClick={saveTitle}>{t('common.save')}</button><button className="chip" onClick={() => setTitleEdit(null)}>{t('common.cancel')}</button>
+            </div>
+          ) : <h1 className="prog-title"><button className="linkish" onClick={() => setTitleEdit(prog.title)} title={t('prog.rename')}>{prog.title}</button></h1>}
+          <div className="acts" style={{ justifyContent: 'flex-start', marginTop: 10 }}>
+            <span className="tag">{client.mode !== 'gym' ? t('prog.online') : t('prog.gym')}</span>
+            {lastDay && <span className="tag">{t('prog.last', { day: lastDay.title, date: fmtDate(lastLog.logged_on, locale) })}</span>}
+            {nextDay && <span className="pill info">{t('prog.next', { day: nextDay.title })}</span>}
+          </div>
+        </div>
+        <div className="acts">
+          <button className="btn ghost small" onClick={() => setImportOpen(true)}><ClipboardPaste />{t('prog.importNotes')}</button>
+          <button className="btn small" onClick={() => setCopyOpen(true)}><Copy />{t('prog.copyTo')}</button>
         </div>
       </div>
-      {w.client_note && <div className="meta">{t('programs.clientNote', { note: w.client_note })}</div>}
-      <ExerciseRows rows={rows} setRows={setRows} showActual idPrefix={`w-${w.id}`} suggestions={suggest} />
-      <label className="f" htmlFor={`w-n-${w.id}`}>{t('programs.notesForClient')}<input id={`w-n-${w.id}`} value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
-      <div className="acts">
-        <button className="btn danger small" onClick={del}>{confirmDel ? t('programs.confirmDelete') : t('programs.deleteWorkout')}</button>
-        <button className="btn small" onClick={save}>{t('common.save')}</button>
+
+      <div className="days" style={{ marginBottom: 12 }}>
+        {days.map((d, i) => <button key={d.id} className="chip" aria-pressed={d.id === day?.id} onClick={() => { setDayIdx(i); setEdit(null); setConfirm(null) }}>{d.title}</button>)}
+        <button className="chip" onClick={addDay}><Plus size={12} style={{ verticalAlign: '-2px' }} /> {t('prog.addDay')}</button>
       </div>
-    </div>
+
+      {day && (edit ? (
+        <section className="panel form">
+          <div className="row2">
+            <label className="f" htmlFor="d-title">{t('prog.dayTitle')}<input id="d-title" value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} /></label>
+            <label className="f" htmlFor="d-focus">{t('prog.focus')}<input id="d-focus" value={edit.focus} placeholder="Strength + Power" onChange={(e) => setEdit({ ...edit, focus: e.target.value })} /></label>
+          </div>
+          <label className="f" htmlFor="d-text">{t('prog.dayText')}
+            <textarea id="d-text" className="notes-text" rows={14} value={edit.text} onChange={(e) => setEdit({ ...edit, text: e.target.value })}
+              placeholder={'1. Deadlift — 3×10\n2. DB Shoulder Press — 3×8–10\n\nSuperset ×3\n• Push Ups ×10\n• Smash Ball Wall Throw ×8\n\nFinisher\n• Assault Bike — 30 sec\n• Rest — 30 sec\n• ×5'} />
+            <small>{t('prog.dayTextHelp')}</small></label>
+          {client.mode !== 'gym' && <label className="f" htmlFor="d-note">{t('prog.dayNote')}<textarea id="d-note" rows={2} value={edit.note} onChange={(e) => setEdit({ ...edit, note: e.target.value })} /></label>}
+          <div className="modal-foot">
+            {days.length > 1 && <button type="button" className="btn danger small" onClick={deleteDay}><Trash2 />{confirm === 'day' ? t('prog.confirm') : t('prog.deleteDay')}</button>}
+            <span className="spacer" />
+            <button type="button" className="btn ghost" onClick={() => setEdit(null)}>{t('common.cancel')}</button>
+            <button type="button" className="btn" onClick={saveDay}>{t('common.save')}</button>
+          </div>
+        </section>
+      ) : (
+        <section className="panel day-card">
+          <div className="panel-h">
+            <h2>{day.title}{day.focus ? ` · ${day.focus}` : ''}</h2>
+            <button className="btn ghost small" onClick={() => startEdit(day)}><Pencil />{t('prog.editDay')}</button>
+          </div>
+          {day.note && <div className="day-note">{day.note}</div>}
+          <ProgramDay day={day} history={history} lib={lib} onMedia={setMedia} />
+        </section>
+      ))}
+
+      <div style={{ marginTop: 18 }}>
+        <button className="btn danger small" onClick={deleteProgram}><Trash2 />{confirm === 'program' ? t('prog.confirm') : t('prog.deleteProgram')}</button>
+      </div>
+
+      <MediaModal name={media} entry={media ? lib[exKey(media)] : null} trainerId={trainerId}
+        onClose={() => setMedia(null)} onSaved={(keepOpen) => { reloadLib(); if (!keepOpen) setMedia(null) }} />
+      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} hasDays={days.some((d) => d.blocks.length)}
+        onUse={async (parsed) => {
+          await run(supabase.from('program_days').delete().eq('program_id', prog.id))
+          const r = await run(supabase.from('program_days').insert(parsed.days.map((d, i) => ({ program_id: prog.id, trainer_id: trainerId, position: i + 1, title: d.title, focus: d.focus || null, blocks: d.blocks }))))
+          if (!r.ok) return
+          if (parsed.title) await run(supabase.from('programs').update({ title: parsed.title }).eq('id', prog.id))
+          const n = await addImportLogs(parsed.days.flatMap((d) => d.kg))
+          setImportOpen(false); setDayIdx(0); setEdit(null); toast(t('prog.imported', { n })); load(); onChanged()
+        }} />
+      <CopyModal open={copyOpen} onClose={() => setCopyOpen(false)} prog={prog} client={client} data={data} trainerId={trainerId}
+        onDone={(target) => { setCopyOpen(false); onChanged(); onOpen(target.id) }} />
+    </>
+  )
+}
+
+function ImportModal({ open, onClose, onUse, hasDays }) {
+  const { t } = useI18n()
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  useEffect(() => { if (open) setText('') }, [open])
+  const parsed = useMemo(() => parseNotes(text), [text])
+  return (
+    <Modal open={open} wide title={t('prog.importTitle')} onClose={onClose}>
+      {open && (
+        <div className="form">
+          <div className="parse">
+            <label className="f" htmlFor="imp">{t('prog.importHelp')}
+              <textarea id="imp" className="notes-text" rows={16} value={text} onChange={(e) => setText(e.target.value)}
+                placeholder={'MARIOS PROGRAM\n\nDAY 1 — STRENGTH + POWER\n\n1. Smith Squat — 3×8  30kg-35kg -40kg\n2. DB Bench Press — 3×8–10 15kg\n\nSuperset ×3\n• TRX Row ×10\n• Medicine Ball Chest Throw ×8\n\nDAY 2 — …'} /></label>
+            <div style={{ minWidth: 0 }}>
+              <div className="meta" style={{ marginBottom: 6 }}>{t('prog.understood')}</div>
+              <div className="parse-out">
+                {parsed.days.length === 0 && <div className="meta">{t('prog.noDays')}</div>}
+                {parsed.days.map((d, i) => (
+                  <div className="blk" key={i}>
+                    <div className="name">{d.title}{d.focus ? ` · ${d.focus}` : ''}</div>
+                    <div className="meta">{d.blocks.map((b, j) => (
+                      <div key={j}>{b.type === 'single'
+                        ? <>{b.items[0].exercise} <span className="rx">{b.items[0].rx}</span>{(() => { const k = d.kg.find((x) => x.exercise === b.items[0].exercise); return k ? <span className="hist inline">{k.kg.map((v, x) => <span key={x}>{v}</span>)}</span> : null })()}</>
+                        : b.type === 'superset' ? <>{t('prog.superset', { n: b.rounds })}: {b.items.map((x) => x.exercise).join(' + ')}</>
+                          : <>{b.rounds ? t('prog.finisherN', { n: b.rounds }) : t('prog.finisher')}: {b.lines.join(', ')}</>}</div>
+                    ))}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {hasDays && <div className="notice warn-box">{t('prog.importReplace')}</div>}
+          <div className="modal-foot">
+            <button type="button" className="btn ghost" onClick={onClose}>{t('common.cancel')}</button>
+            <button type="button" className="btn" disabled={busy || !parsed.days.length} onClick={async () => { setBusy(true); await onUse(parsed); setBusy(false) }}>{t('prog.useImport')}</button>
+          </div>
+        </div>
+      )}
+    </Modal>
+  )
+}
+
+function CopyModal({ open, onClose, prog, client, data, trainerId, onDone }) {
+  const { t } = useI18n()
+  const run = useRun()
+  const toast = useToast()
+  const [target, setTarget] = useState('')
+  const [has, setHas] = useState({})
+  const options = data.clients.filter((c) => c.active && c.id !== client.id)
+  useEffect(() => {
+    if (!open) return
+    setTarget('')
+    supabase.from('programs').select('client_id').eq('trainer_id', trainerId).then(({ data: d }) => setHas(Object.fromEntries((d || []).map((x) => [x.client_id, true]))))
+  }, [open, trainerId])
+  async function copy() {
+    const c = data.clients.find((x) => x.id === target)
+    if (!c) return
+    const title = prog.title.replace(client.name.split(' ')[0], c.name.split(' ')[0]).replace(client.name, c.name)
+    let pid
+    const ex = await supabase.from('programs').select('id').eq('client_id', c.id).maybeSingle()
+    if (ex.data) {
+      pid = ex.data.id
+      await run(supabase.from('programs').update({ title }).eq('id', pid))
+      await run(supabase.from('program_days').delete().eq('program_id', pid))
+    } else {
+      const r = await run(supabase.from('programs').insert({ trainer_id: trainerId, client_id: c.id, title }).select().single())
+      if (!r.ok) return
+      pid = r.data.id
+    }
+    const r = await run(supabase.from('program_days').insert(prog.program_days.map((d) => ({ program_id: pid, trainer_id: trainerId, position: d.position, title: d.title, focus: d.focus, note: d.note, blocks: d.blocks }))))
+    if (r.ok) { toast(t('prog.copied', { name: c.name })); onDone(c) }
+  }
+  return (
+    <Modal open={open} title={t('prog.copyTitle')} onClose={onClose}>
+      {open && (
+        <div className="form">
+          <div className="meta">{t('prog.copyHelp')}</div>
+          <div className="grid" style={{ gap: 8, maxHeight: '50vh', overflow: 'auto' }}>
+            {options.map((c) => (
+              <button key={c.id} type="button" className="choice" aria-pressed={target === c.id} onClick={() => setTarget(c.id)}>
+                <span><b>{c.name}</b><span className="meta" style={{ display: 'block' }}>{t(`modes.${c.mode || 'gym'}`)}{has[c.id] ? ` · ${t('prog.copyReplace')}` : ''}</span></span>
+                {target === c.id && <span className="pill ok">✓</span>}
+              </button>
+            ))}
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="btn ghost" onClick={onClose}>{t('common.cancel')}</button>
+            <button type="button" className="btn" disabled={!target} onClick={copy}>{t('prog.copyTo')}</button>
+          </div>
+        </div>
+      )}
+    </Modal>
   )
 }

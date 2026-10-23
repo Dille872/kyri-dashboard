@@ -1,4 +1,4 @@
-# Train with Kyri – Coach Dashboard (v1.4.0)
+# Train with Kyri – Coach Dashboard (v2.0.0)
 
 Web-App für Trainer und Klienten: Kalender, Klienten mit Paketen, Zahlungen (Revolut, Überweisung, Bar) und eine Client-App für das Handy. Sprachen: Englisch, Griechisch, Deutsch.
 
@@ -10,7 +10,7 @@ Stack wie beim Agentur-Dashboard: Vite + React + Supabase, Hosting auf Vercel.
 
 1. Auf supabase.com ein **neues Projekt** anlegen, z. B. `kyri-dashboard` (getrennt vom Agentur-Dashboard). Region: Frankfurt.
 2. **SQL Editor** → Inhalt von `sql/001_schema.sql` einfügen → Run.
-3. **SQL Editor** → Inhalt von `sql/003_training.sql` einfügen → Run, danach `sql/004_counting.sql` → Run, danach `sql/005_planning.sql` → Run, danach `sql/006_client_actions.sql` → Run.
+3. **SQL Editor** → Inhalt von `sql/003_training.sql` einfügen → Run, danach `sql/004_counting.sql` → Run, danach `sql/005_planning.sql` → Run, danach `sql/006_client_actions.sql` → Run, danach `sql/007_programs.sql` → Run, danach `sql/008_storage.sql` → Run (für eigene Videos).
 4. **SQL Editor** → Inhalt von `sql/002_seed_demo.sql` einfügen, **in der letzten Zeile deine E-Mail eintragen** → Run.
    - Du wirst Trainer-Admin.
    - Die 6 Fake-Klienten bekommen Aliase deiner E-Mail (z. B. `du+elena@…`). Ihre Login-Mails landen also bei dir. So kannst du die Client-App selbst testen.
@@ -49,7 +49,7 @@ In einem privaten Fenster damit anmelden → Client-Ansicht. Für die Live-Versi
 ## 4. Übergabe an Kyri
 
 1. Kyri legt eigene Konten an (Supabase, Vercel, GitHub) und lädt dich als Mitglied ein.
-2. In **seinem** Supabase: `001_schema.sql`, `003_training.sql`, `004_counting.sql`, `005_planning.sql` und `006_client_actions.sql` ausführen. Kein Seed. Stattdessen einmal:
+2. In **seinem** Supabase: `001_schema.sql`, `003_training.sql`, `004_counting.sql`, `005_planning.sql`, `006_client_actions.sql`, `007_programs.sql` und `008_storage.sql` ausführen. Kein Seed. Stattdessen einmal:
    ```sql
    insert into trainers (slug, brand_name, owner_name, tagline, default_lang)
    values ('kyri', 'Train with Kyri', 'Kyriakos Nicolaou', 'Train with purpose.', 'en');
@@ -75,13 +75,18 @@ Das Logo liegt unter `public/logo.png` (und die App-Icons daneben). Wenn du die 
   - Bar / direkt erhalten: *Zahlung eintragen*.
 - **Gym / Online:** pro Termin wählbar, bei Online mit Video-Link. Klienten haben eine Standardform (Gym, Online, Gym + Online).
 - **Serientermine:** „Wöchentlich wiederholen“ beim neuen Termin, z. B. Mo + Do für 8 Wochen.
-- **Trainingslog:** ✓ auf der Übersicht oder Name antippen öffnet das Log, vorausgefüllt mit dem letzten Mal. Auch im Termin: Übungen mit Sätzen × Wdh. @ kg, „Letztes Mal“ als Vorlage, private Notiz nur für Kyri.
-- **Trainingspläne (Online):** Wochenplan pro Klient. Klient hakt ab und trägt seine Kilos ein. „In nächste Woche kopieren“ übernimmt die tatsächlichen Kilos. Check-in-Tag pro Klient erscheint in der Übersicht.
-- **Wochenplanung:** Plan für jede Einheit vorab schreiben (Wie letztes Mal, Vorlagen). Klienten sehen den Plan erst, wenn die Einheit erledigt ist. Im Training zeigt das Log den Plan grau an, Kyri trägt nur Abweichungen ein.
-- **Fortschritt:** Klienten → Name antippen öffnet das Profil (Fortschritt, nächste Termine mit Plan-Status, Trainingsverlauf). Auch und in der Client-App: Einheiten, Anwesenheit, Rekord, Steigerung pro Übung mit Mini-Kurve.
+- **Programme (wie Kyris Notizen):** pro Klient ein Programm mit Tagen (Day 1, Day 2 …), Supersätzen und Finisher. Tage wiederholen sich. „Aus Notizen einfügen“ liest den Text aus der Notizen-App inkl. kg-Verlauf („30kg-35kg -40kg“, „/110“ = Ziel). „Tag bearbeiten“ ist ein Textfeld im selben Format. „Für anderen Kunden kopieren“. Kunden sehen Programme nie.
+- **kg-Verlauf:** Unter jeder Übung „60 · 70 · 80 · 90“. Wächst mit jedem Log (Kyri im Gym oder der Kunde online).
+- **Eintragen im Gym:** ✓ auf der Übersicht (oder Name antippen) öffnet das Log: Tag wählen (nächster in der Reihenfolge ist vorausgewählt), nur geänderte kg eintragen, leer = wie letztes Mal. Der Haken bleibt manuell.
+- **Hinweis + Video pro Übung:** einmal gespeichert, in allen Programmen genutzt. YouTube-Link oder eigenes Video (Supabase Storage, `008_storage.sql`).
+- **Online-Kunden:** sehen vorher nur, was sie brauchen (Geräte, Dauer, Kyris Hinweis). „Einheit starten“ zeigt eine Übung nach der anderen, kg/Wdh. pro Satz, Pausen- und Intervall-Timer, Wasserzeichen mit Name. Am Ende Notiz → „An Kyri senden“ → erscheint in der Übersicht und im kg-Verlauf.
+- **Gym-Kunden** sehen nichts zum Training (auch technisch gesperrt).
+- **PAR-Q + Regeln:** beim ersten Login Gesundheitsfragen, danach Kyris Regeln (einmal akzeptieren, Datum gespeichert, jederzeit unter „Meine Regeln“). Fragen und Regeln stehen in den Einstellungen; „Ja“-Antworten erscheinen rot bei Kyri.
+- **Paket-Erinnerung:** Die App rechnet aus restlichen Einheiten + gebuchten Terminen aus, welcher Termin der letzte des Pakets ist, und zeigt dem Kunden X Tage vorher (Einstellungen, Standard 2) einen Hinweis mit „Neues Paket buchen“. Bei Kyri: „Paket endet bald“. Demo: nur in der App. Echte Version: zusätzlich per E-Mail.
+- **Aktiv / Archiviert:** archivieren statt löschen, alle Daten bleiben. Archivierte Kunden können sich nicht anmelden.
+- **Fortschritt:** im Kundenprofil (nur für Kyri): Einheiten, Anwesenheit, Rekord, Steigerung pro Übung.
 - **Client-App:** Termin absagen (bis X Stunden vorher kostenlos, danach zählt es), WhatsApp-Button zu Kyri, neues Paket anfragen (Kyri nimmt an, Zahlung wird fällig), Termin in Apple-/Google-Kalender. WhatsApp-Nummer und Absagefrist stehen in den Einstellungen.
-- **Sichtbarkeit:** pro Klient abschaltbar; in den Einstellungen optional Sperre bei Überfälligkeit und Zeitfenster für die Historie.
-- **Handy:** Trainer-Bereich mit App-Leiste unten (Übersicht, Kalender, Klienten, Zahlungen, Mehr), Kalender als Tagesansicht, Fenster als Blatt von unten. Sprache unter „Mehr“.
+- **Handy:** Trainer-Bereich mit App-Leiste unten (Übersicht, Kalender, Klienten, Zahlungen, Mehr → Programme, Einstellungen), Kalender als Tagesansicht, Fenster als Blatt von unten. Sprache unter „Mehr“.
 - **Sprachen:** Umschalter EN / ΕΛ / DE. Klienten starten in der Sprache, die Kyri beim Klienten eingestellt hat. Texte liegen in `src/locales/`.
 - **Mehrere Trainer:** Die Datenbank ist dafür schon ausgelegt (jede Zeile gehört zu einem Trainer). Für weitere Trainer braucht es später nur ein eigenes Projekt bzw. eine Trainer-Auswahl.
 
@@ -94,7 +99,9 @@ sql/003_training.sql    v1.1.0: Gym/Online, Serien, Trainingslog, Pläne
 sql/004_counting.sql    v1.1.2: kurzfristige Absage, Zählregeln
 sql/005_planning.sql    v1.3.0: Vorlagen, Pläne privat bis erledigt
 sql/006_client_actions.sql v1.4.0: Absagen, Telefon, Paket-Anfragen
-src/locales/            en.js, el.js, de.js
+sql/007_programs.sql    v2.0.0: Programme, kg-Verlauf, Online-Einheiten, PAR-Q, Regeln, Archiv
+sql/008_storage.sql     v2.0.0: Speicher für eigene Übungsvideos
+src/locales/            en.js, el.js, de.js (+ v2/ für die neuen Texte)
 src/pages/admin/        Übersicht, Kalender, Klienten, Zahlungen, Einstellungen
 src/pages/client/       Client-App
 ```

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Copy } from 'lucide-react'
+import { Plus, Trash2, Copy, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { supabase } from '../../supabase.js'
-import { LANGS, useI18n } from '../../i18n.jsx'
+import { DICTS, LANGS, useI18n } from '../../i18n.jsx'
 import { copyText, useRun, useToast } from '../../components/ui.jsx'
 
-const FIELDS = ['brand_name', 'owner_name', 'tagline', 'account_name', 'iban', 'bic', 'revolut_url', 'default_lang', 'lock_overdue_days', 'client_history_weeks', 'phone', 'cancel_hours']
-const NUMBERS = ['lock_overdue_days', 'client_history_weeks', 'cancel_hours']
+const FIELDS = ['brand_name', 'owner_name', 'tagline', 'account_name', 'iban', 'bic', 'revolut_url', 'default_lang', 'phone', 'cancel_hours', 'rules_text', 'reminder_days']
+const NUMBERS = ['cancel_hours', 'reminder_days']
 
 export default function Settings({ data, reload, trainerId }) {
   const { t } = useI18n()
@@ -22,6 +22,7 @@ export default function Settings({ data, reload, trainerId }) {
     row.brand_name = row.brand_name || data.trainer.brand_name
     row.default_lang = row.default_lang || 'en'
     if (row.cancel_hours == null) row.cancel_hours = 24
+    row.reminder_days = Math.min(Math.max(row.reminder_days ?? 2, 1), 14)
     const r = await run(supabase.from('trainers').update(row).eq('id', trainerId))
     if (r.ok) { toast(t('common.saved')); reload() }
   }
@@ -66,11 +67,11 @@ export default function Settings({ data, reload, trainerId }) {
             <label className="f" htmlFor="t-bic">{t('settings.bic')}<input id="t-bic" value={f.bic} onChange={set('bic')} /></label>
           </div>
           <label className="f" htmlFor="t-rev">{t('settings.revolut')}<input id="t-rev" type="url" value={f.revolut_url} onChange={set('revolut_url')} placeholder="https://revolut.me/…" /><small>{t('settings.revolutHelp')}</small></label>
-          <h2 style={{ marginTop: 10 }}>{t('settings.protection')}</h2>
-          <div className="row2">
-            <label className="f" htmlFor="t-lock">{t('settings.lockDays')}<input id="t-lock" type="number" min="0" value={f.lock_overdue_days} onChange={set('lock_overdue_days')} /><small>{t('settings.lockHelp')}</small></label>
-            <label className="f" htmlFor="t-hist">{t('settings.historyWeeks')}<input id="t-hist" type="number" min="1" value={f.client_history_weeks} onChange={set('client_history_weeks')} /><small>{t('settings.historyHelp')}</small></label>
-          </div>
+          <h2 style={{ marginTop: 10 }}>{t('settings.rules')}</h2>
+          <div className="meta" style={{ marginTop: -8 }}>{t('settings.rulesHelp')}</div>
+          <textarea id="t-rules" aria-label={t('settings.rules')} rows={6} value={f.rules_text} onChange={set('rules_text')} />
+          <h2 style={{ marginTop: 10 }}>{t('settings.reminder')}</h2>
+          <label className="f" htmlFor="t-remind">{t('settings.reminderDays')}<input id="t-remind" type="number" min="1" max="14" value={f.reminder_days} onChange={set('reminder_days')} style={{ maxWidth: 120 }} /><small>{t('settings.reminderHelp')}</small></label>
           <div className="modal-foot"><button className="btn">{t('common.save')}</button></div>
         </form>
 
@@ -104,6 +105,63 @@ export default function Settings({ data, reload, trainerId }) {
           </section>
         </div>
       </div>
+      <ParqEditor trainer={data.trainer} trainerId={trainerId} reload={reload} />
     </>
+  )
+}
+
+// Health questions: collapsible, Yes/No or text, flag "Yes", reorder, delete, reset to the standard 7
+function ParqEditor({ trainer, trainerId, reload }) {
+  const { t, lang } = useI18n()
+  const run = useRun()
+  const toast = useToast()
+  const [open, setOpen] = useState(false)
+  const [qs, setQs] = useState(trainer.parq_questions || [])
+  const [dirty, setDirty] = useState(false)
+  useEffect(() => { setQs(trainer.parq_questions || []); setDirty(false) }, [trainer.parq_questions])
+  const upd = (next) => { setQs(next); setDirty(true) }
+  const setQ = (i, patch) => upd(qs.map((q, j) => (j === i ? { ...q, ...patch } : q)))
+  const move = (i, d) => { const n = [...qs]; [n[i], n[i + d]] = [n[i + d], n[i]]; upd(n) }
+  async function save() {
+    const clean = qs.filter((q) => q.q.trim()).map((q) => ({ q: q.q.trim(), type: q.type, flag: q.type === 'yn' && !!q.flag }))
+    const r = await run(supabase.from('trainers').update({ parq_questions: clean }).eq('id', trainerId))
+    if (r.ok) { toast(t('common.saved')); setDirty(false); reload() }
+  }
+  const flagged = qs.filter((q) => q.type === 'yn' && q.flag).length
+  return (
+    <section className="panel" style={{ marginTop: 14 }}>
+      <button className="fold" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span><h2>{t('settings.parqTitle')}</h2><span className="meta">{t('settings.parqCount', { n: qs.length, f: flagged })}</span></span>
+        <ChevronDown className="chev" />
+      </button>
+      {open && (
+        <div className="form" style={{ marginTop: 14 }}>
+          <div className="meta">{t('settings.parqHelp')}</div>
+          <div className="acts" style={{ justifyContent: 'flex-start' }}>
+            <button type="button" className="chip solid" onClick={() => upd([...qs, { q: '', type: 'yn', flag: true }])}><Plus size={12} style={{ verticalAlign: '-2px' }} /> {t('settings.addQ')}</button>
+            <button type="button" className="chip" onClick={() => { upd((DICTS[lang] || DICTS.en).parqStd.map((q) => ({ q, type: 'yn', flag: true }))); toast(t('settings.resetDone')) }}>{t('settings.resetQ')}</button>
+          </div>
+          <div className="list">
+            {qs.map((q, i) => (
+              <div className="qrow" key={i}>
+                <span className="n">{i + 1}</span>
+                <textarea rows={2} aria-label={t('settings.question', { n: i + 1 })} placeholder={t('settings.newQ')} value={q.q} onChange={(e) => setQ(i, { q: e.target.value })} />
+                <select aria-label={t('settings.question', { n: i + 1 })} value={q.type} onChange={(e) => setQ(i, { type: e.target.value })}>
+                  <option value="yn">{t('settings.yn')}</option><option value="text">{t('settings.text')}</option>
+                </select>
+                <label className="check-row qflag" style={{ visibility: q.type === 'yn' ? 'visible' : 'hidden' }}>
+                  <input type="checkbox" checked={!!q.flag} onChange={(e) => setQ(i, { flag: e.target.checked })} />{t('settings.flag')}</label>
+                <div className="acts" style={{ flexWrap: 'nowrap' }}>
+                  <button type="button" className="icon-btn sm" disabled={i === 0} onClick={() => move(i, -1)} aria-label={t('common.moveUp')}><ArrowUp /></button>
+                  <button type="button" className="icon-btn sm" disabled={i === qs.length - 1} onClick={() => move(i, 1)} aria-label={t('common.moveDown')}><ArrowDown /></button>
+                  <button type="button" className="icon-btn sm" onClick={() => upd(qs.filter((_, j) => j !== i))} aria-label={t('settings.delQ')}><Trash2 /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="modal-foot"><button type="button" className="btn" disabled={!dirty} onClick={save}>{t('settings.saveQ')}</button></div>
+        </div>
+      )}
+    </section>
   )
 }
