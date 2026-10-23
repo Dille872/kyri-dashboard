@@ -1,7 +1,7 @@
 -- ============================================================
 -- Demo data (fake clients) for building and showing the app.
 --
--- 1. Run 001 and 003 – 007 first.
+-- 1. Run 001 and 003 – 009 first.
 -- 2. Check the email in the LAST line (that person becomes the trainer admin), then run this file.
 --
 -- The six demo clients get "plus" aliases of that email (you+elena@…).
@@ -202,8 +202,6 @@ begin
   update clients set sessions_used = 3 where id = c2;
   update clients set sessions_used = 2 where id = c3;
   update clients set sessions_used = 0 where id = c4;
-  perform seed_session(t, c4, current_date + 3, '12:30', 'strength', 'planned', null, '[]', 'online');
-  update sessions set meeting_url = 'https://zoom.us/j/0000000000' where client_id = c4 and meeting_url is null;
   update clients set sessions_used = 4 where id = c5;
   update clients set sessions_used = 7 where id = c6;
 
@@ -445,6 +443,13 @@ begin
   values (t, c8, ans, 'Knee surgery (ACL) in 2024, cleared by my doctor for training.', 'Sofia Andreou', true, now() - interval '2 hours');
   update clients set parq_at = now() - interval '2 hours', rules_accepted_at = now() - interval '2 hours' where id = c8;
 
+  -- ---------- Program days assigned to booked sessions (Kyri does this in the calendar or the program) ----------
+  update sessions set program_day_id = seed_day(c7, 3) where client_id = c7 and status = 'planned' and (starts_at at time zone 'Asia/Nicosia')::date = current_date;
+  update sessions set program_day_id = seed_day(c7, 1) where client_id = c7 and status = 'planned' and (starts_at at time zone 'Asia/Nicosia')::date = current_date + 4;
+  update sessions set program_day_id = seed_day(c2, 1) where client_id = c2 and status = 'planned' and starts_at >= (wk + 7)::timestamp and starts_at < (wk + 8)::timestamp;
+  update sessions set program_day_id = seed_day(c2, 2) where client_id = c2 and status = 'planned' and starts_at >= (wk + 9)::timestamp and starts_at < (wk + 10)::timestamp;
+  update sessions set program_day_id = seed_day(c4, 3) where client_id = c4 and status = 'planned' and starts_at > now();
+
   -- ---------- Elena: exactly one session left in her pack → reminder ----------
   if not exists (select 1 from sessions where client_id = c1 and status = 'planned'
                  and starts_at between now() and (current_date + 3)::timestamp at time zone 'Asia/Nicosia') then
@@ -452,6 +457,8 @@ begin
   end if;
   update clients set sessions_used = 10 - 1 - (select count(*) from sessions where client_id = c1 and status = 'planned' and starts_at < now())
    where id = c1;
+  update sessions set program_day_id = seed_day(c1, 1)
+   where id = (select id from sessions where client_id = c1 and status = 'planned' and starts_at > now() order by starts_at limit 1);
 
   return t;
 end $$;

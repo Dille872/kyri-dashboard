@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ClipboardPaste, Copy, Pencil, Plus, Trash2, Video } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, ClipboardPaste, Copy, Pencil, Plus, Trash2, Video, X } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { Modal, Spinner, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
 import ProgramDay from '../../components/ProgramDay.jsx'
 import { MediaModal, useLibrary } from '../../components/ExerciseMedia.jsx'
 import { blocksToText, exKey, historyByExercise, parseDayText, parseNotes } from '../../lib/program.js'
-import { addDays, fmtDate, ymd } from '../../lib/format.js'
+import { addDays, fmtDate, hm, toIso, ymd } from '../../lib/format.js'
 
 const KEY = 'programs-client'
+const toIsoStartOfToday = () => toIso(ymd(), '00:00')
 
 // Programs replace the weekly planning: days that repeat, like Kyri's notes.
 export default function Programs({ data, trainerId, go }) {
@@ -103,13 +104,18 @@ function Editor({ client, data, trainerId, lib, reloadLib, onChanged, onBack, on
   const [nextId, setNextId] = useState(null)
   const [confirm, setConfirm] = useState(null)
   const [titleEdit, setTitleEdit] = useState(null)
+  const [upcoming, setUpcoming] = useState([])      // booked sessions of this client
+  const [assignOpen, setAssignOpen] = useState(false)
 
   const load = useCallback(async () => {
-    const [p, l, n] = await Promise.all([
+    const [p, l, n, u] = await Promise.all([
       supabase.from('programs').select('*, program_days(*)').eq('client_id', client.id).maybeSingle(),
       supabase.from('exercise_logs').select('exercise, kg, reps, logged_on, created_at, day_id, source').eq('client_id', client.id).order('logged_on'),
       supabase.rpc('next_day_for', { p_client: client.id }),
+      supabase.from('sessions').select('id, starts_at, program_day_id, format').eq('client_id', client.id).eq('status', 'planned')
+        .gte('starts_at', toIsoStartOfToday()).order('starts_at').limit(40),
     ])
+    setUpcoming(u.data || [])
     if (p.data) p.data.program_days.sort((a, b) => a.position - b.position)
     setProg(p.data); setLogs(l.data || []); setNextId(n.data || null)
   }, [client.id])
@@ -122,6 +128,14 @@ function Editor({ client, data, trainerId, lib, reloadLib, onChanged, onBack, on
   const lastLog = [...logs].filter((l) => l.day_id).sort((a, b) => (b.logged_on + b.created_at).localeCompare(a.logged_on + a.created_at))[0]
   const lastDay = lastLog && days.find((d) => d.id === lastLog.day_id)
   const nextDay = days.find((d) => d.id === nextId)
+  const when = (iso) => `${fmtDate(ymd(new Date(iso)), locale, { weekday: 'short', day: 'numeric', month: 'short' })} · ${hm(new Date(iso))}`
+  async function assign(sessionId, dayId) {
+    const r = await run(supabase.from('sessions').update({ program_day_id: dayId }).eq('id', sessionId))
+    if (!r.ok) return
+    const se = upcoming.find((x) => x.id === sessionId)
+    if (dayId) toast(t('prog.assignedToast', { day: day.title, when: when(se.starts_at) }))
+    setUpcoming(upcoming.map((x) => (x.id === sessionId ? { ...x, program_day_id: dayId } : x)))
+  }
 
   // kg found in pasted / typed text → history entries, one week apart, ending today
   async function addImportLogs(kgs) {
@@ -217,6 +231,15 @@ function Editor({ client, data, trainerId, lib, reloadLib, onChanged, onBack, on
             <h2>{day.title}{day.focus ? ` · ${day.focus}` : ''}</h2>
             <button className="btn ghost small" onClick={() => startEdit(day)}><Pencil />{t('prog.editDay')}</button>
           </div>
+          <div className="planned-for">
+            <span className="meta">{t('prog.scheduled')}:</span>
+            {upcoming.filter((x) => x.program_day_id === day.id).map((x) => (
+              <span key={x.id} className="chip-static">{when(x.starts_at)}
+                <button className="x-btn" onClick={() => assign(x.id, null)} aria-label={t('prog.unassign')} title={t('prog.unassign')}><X size={12} /></button></span>
+            ))}
+            {!upcoming.some((x) => x.program_day_id === day.id) && <span className="meta">{t('prog.notScheduled')}</span>}
+            <button className="chip" onClick={() => setAssignOpen(true)}><CalendarPlus size={12} style={{ verticalAlign: '-2px' }} /> {t('prog.assign')}</button>
+          </div>
           {day.note && <div className="day-note">{day.note}</div>}
           <ProgramDay day={day} history={history} lib={lib} onMedia={setMedia} />
         </section>
@@ -226,6 +249,28 @@ function Editor({ client, data, trainerId, lib, reloadLib, onChanged, onBack, on
         <button className="btn danger small" onClick={deleteProgram}><Trash2 />{confirm === 'program' ? t('prog.confirm') : t('prog.deleteProgram')}</button>
       </div>
 
+      <Modal open={assignOpen} title={day ? t('prog.assignTitle', { day: day.title }) : ''} onClose={() => setAssignOpen(false)}>
+        {assignOpen && day && (
+          <div className="form">
+            <div className="meta">{t('prog.assignHelp', { name: client.name.split(' ')[0] })}</div>
+            {upcoming.length === 0 && <div className="empty">{t('prog.noUpcoming')}</div>}
+            <div className="grid" style={{ gap: 8, maxHeight: '55vh', overflow: 'auto' }}>
+              {upcoming.map((x) => {
+                const other = days.find((d) => d.id === x.program_day_id)
+                return (
+                  <button key={x.id} type="button" className="choice" aria-pressed={x.program_day_id === day.id}
+                    onClick={() => { assign(x.id, x.program_day_id === day.id ? null : day.id) }}>
+                    <span><b>{when(x.starts_at)}</b>{x.format === 'online' && <span className="meta"> · {t('formats.online')}</span>}
+                      {other && other.id !== day.id && <span className="meta" style={{ display: 'block' }}>{t('prog.alreadyDay', { day: other.title })}</span>}</span>
+                    {x.program_day_id === day.id ? <span className="pill ok">{day.title}</span> : <CalendarPlus size={18} />}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="modal-foot"><button type="button" className="btn" onClick={() => setAssignOpen(false)}>{t('common.done')}</button></div>
+          </div>
+        )}
+      </Modal>
       <MediaModal name={media} entry={media ? lib[exKey(media)] : null} trainerId={trainerId}
         onClose={() => setMedia(null)} onSaved={(keepOpen) => { reloadLib(); if (!keepOpen) setMedia(null) }} />
       <ImportModal open={importOpen} onClose={() => setImportOpen(false)} hasDays={days.some((d) => d.blocks.length)}

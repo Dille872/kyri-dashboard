@@ -483,3 +483,12 @@ a.choice{color:var(--ink);text-decoration:none}
   .pex>span:last-child:empty{display:none}
   .log-in input{width:96px}
 }
+
+/* v2.1.0: program days on sessions */
+.day-tag{display:inline-block;margin-top:4px;font:700 10px var(--display);text-transform:uppercase;letter-spacing:.1em;padding:2px 7px;border-radius:6px;background:var(--info-soft);color:var(--info)}
+.ev .day-tag{display:block;width:max-content;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.planned-for{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.planned-for .chip-static{padding:4px 6px 4px 11px;font-size:12px}
+.x-btn{all:unset;cursor:pointer;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;color:var(--muted)}
+.x-btn:hover{background:var(--line);color:var(--ink)}
+.x-btn:focus-visible{outline:2px solid var(--ink)}

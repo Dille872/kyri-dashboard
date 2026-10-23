@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n.jsx'
 import { Modal, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
 import ProgramLog from '../../components/ProgramLog.jsx'
 import { packStatuses } from '../../lib/pack.js'
+import { useProgramDays } from '../../lib/useProgramDays.js'
 import { fmtKg } from '../../lib/program.js'
 import { addDays, daysBetween, fmtDate, fmtRelative, hm, money, mondayOf, payState, toIso, ymd } from '../../lib/format.js'
 
@@ -22,6 +23,7 @@ export default function Overview({ data, reload, go, trainerId }) {
   const [logFor, setLogFor] = useState(null)   // session whose training log is open
   const [clientCancels, setClientCancels] = useState([])   // session for the "what happened?" dialog
   const today = ymd()
+  const progDays = useProgramDays(trainerId)
   const monday = mondayOf(today)
 
   const load = useCallback(async () => {
@@ -142,6 +144,7 @@ export default function Overview({ data, reload, go, trainerId }) {
                       : <div className="name">{s.notes || t('kinds.own')}</div>}
                     <div className="meta">{s.format === 'online' ? <span className="fmt"><Video />{t('formats.online')}</span> : t(`kinds.${s.kind}`)}{s.location ? ` · ${s.location}` : ''}
                       {canLog(s) && s.status === 'planned' ? ` · ${t('overview.tapToLog')}` : ''}</div>
+                    {progDays.byId[s.program_day_id] && <span className="day-tag">{progDays.byId[s.program_day_id].title}{progDays.byId[s.program_day_id].focus ? ` · ${progDays.byId[s.program_day_id].focus}` : ''}</span>}
                     {lastIds.has(s.id) && <span className="pill warn" style={{ marginTop: 4 }}>{t('overview.lastTag')}</span>}</div>
                   <QuickActions s={s} />
                 </div>

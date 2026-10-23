@@ -27,7 +27,7 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
       supabase.from('exercise_logs').select('*').eq('client_id', client.id).not('session_id', 'is', null),
       supabase.from('workout_logs').select('*, exercise_logs(exercise, kg, reps)').eq('client_id', client.id).order('finished_at', { ascending: false }).limit(20),
       supabase.from('parq_responses').select('*').eq('client_id', client.id).order('created_at', { ascending: false }).limit(1),
-      supabase.from('programs').select('id, title, program_days(id)').eq('client_id', client.id).maybeSingle(),
+      supabase.from('programs').select('id, title, program_days(id, title)').eq('client_id', client.id).maybeSingle(),
     ])
     const p = planned.data || []
     setD({
@@ -150,7 +150,8 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
             {d.upcoming.slice(0, 6).map((s) => (
               <div className="row" key={s.id}>
                 <div style={{ minWidth: 0 }}><div className="name">{when(s.starts_at)}</div>
-                  <div className="meta">{s.format === 'online' ? <span className="fmt"><Video />{t('formats.online')}</span> : t(`kinds.${s.kind}`)}</div></div>
+                  <div className="meta">{s.format === 'online' ? <span className="fmt"><Video />{t('formats.online')}</span> : t(`kinds.${s.kind}`)}</div>
+                  {d.program?.program_days.find((x) => x.id === s.program_day_id) && <span className="day-tag">{d.program.program_days.find((x) => x.id === s.program_day_id).title}</span>}</div>
                 {pack?.kind === 'last' && pack.session.id === s.id && <span className="pill warn">{t('overview.lastTag')}</span>}
               </div>
             ))}

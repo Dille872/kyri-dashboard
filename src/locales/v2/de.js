@@ -17,7 +17,13 @@ export default {
     addNote: 'Hinweis / Video', editNote: 'Hinweis / Video', online: 'Online · macht es Schritt für Schritt', gym: 'Gym · du trägst ein',
     last: 'Zuletzt trainiert: {day} · {date}', next: 'Als Nächstes: {day}', kgHistory: 'kg-Historie', saved: 'Programm gespeichert', noClient: 'Wähle links einen Kunden.',
     dayCount: '{n} Tage', dayCount1: '1 Tag',
+    assign: 'Einem Termin zuweisen', assignTitle: '{day} · Termin wählen', assignHelp: 'Gebuchte Termine von {name}. Verschiebst du den Termin im Kalender, wandert der Tag mit.',
+    noUpcoming: 'Keine gebuchten Termine. Leg sie zuerst im Kalender an.', scheduled: 'Geplant für', notScheduled: 'Noch keinem Termin zugewiesen.', unassign: 'Entfernen',
+    assignedToast: '{day} → {when}', alreadyDay: 'aktuell {day}',
     backToList: 'Alle Programme',
+  },
+  calendar: {
+    programDay: 'Programmtag', noDay: '– noch offen –', noProgram: 'Noch kein Programm',
   },
   media: {
     note: 'Hinweis für den Kunden', notePh: 'z. B. Rücken gerade, langsam ablassen', video: 'Technik-Video',

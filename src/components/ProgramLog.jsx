@@ -33,7 +33,9 @@ export default function ProgramLog({ session, client, trainerId, onClose, onSave
       const mine = (logs.data || []).filter((l) => l.session_id === session.id)
       const others = (logs.data || []).filter((l) => l.session_id !== session.id)
       // editing an already logged session: open its day with its values
-      const dayId = mine[0]?.day_id || next.data || days[0]?.id
+      // a logged session keeps its day; otherwise the day Kyri assigned to this session; otherwise the next in the rotation
+      const assigned = days.some((d) => d.id === session.program_day_id) ? session.program_day_id : null
+      const dayId = mine[0]?.day_id || assigned || next.data || days[0]?.id
       setVals(Object.fromEntries(mine.map((l) => [exKey(l.exercise), l.kg == null ? '' : String(Number(l.kg))])))
       setNote(sn.data?.note || '')
       setSt({ program: prog.data, days, history: historyByExercise(others), dayId, nextId: next.data, mine })

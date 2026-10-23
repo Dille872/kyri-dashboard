@@ -18,7 +18,13 @@ export default {
     addNote: 'Note / video', editNote: 'Note / video', online: 'Online · does it step by step', gym: 'Gym · you log it',
     last: 'Last trained: {day} · {date}', next: 'Next: {day}', kgHistory: 'kg history', saved: 'Program saved', noClient: 'Pick a client on the left.',
     dayCount: '{n} days', dayCount1: '1 day',
+    assign: 'Assign to a session', assignTitle: '{day} · pick a session', assignHelp: 'Booked sessions of {name}. If you move the session in the calendar, the day moves with it.',
+    noUpcoming: 'No booked sessions. Add them in the calendar first.', scheduled: 'Planned for', notScheduled: 'Not assigned to a session yet.', unassign: 'Remove',
+    assignedToast: '{day} → {when}', alreadyDay: 'currently {day}',
     backToList: 'All programs',
+  },
+  calendar: {
+    programDay: 'Program day', noDay: '– not set –', noProgram: 'No program yet',
   },
   media: {
     note: 'Note for the client', notePh: 'e.g. Keep your back straight, slow on the way down', video: 'How-to video',

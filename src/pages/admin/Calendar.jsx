@@ -4,6 +4,7 @@ import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { Modal, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
 import ProgramLog from '../../components/ProgramLog.jsx'
+import { useProgramDays } from '../../lib/useProgramDays.js'
 import { addDays, fmtDate, hm, isoDow, isoWeek, money, mondayOf, toIso, weekdayName, ymd } from '../../lib/format.js'
 
 export const KINDS = ['strength', 'mobility', 'conditioning', 'own']
@@ -24,8 +25,10 @@ export default function Calendar({ data, reload, trainerId, go }) {
     if (r.ok) setSessions(r.data)
   }, [monday, trainerId, run])
   useEffect(() => { load() }, [load])
+  const progDays = useProgramDays(trainerId)
 
   const byId = Object.fromEntries(data.clients.map((c) => [c.id, c]))
+  const dayLabel = (s) => progDays.byId[s.program_day_id]?.title
   const pendingIds = new Set(data.pending.map((p) => p.client_id))
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
   const dues = data.clients.filter((c) => c.active && c.next_due_date && !pendingIds.has(c.id))
@@ -60,6 +63,7 @@ export default function Calendar({ data, reload, trainerId, go }) {
                 <div style={{ minWidth: 0, textAlign: 'left' }}>
                   <div className="name">{s.client_id ? byId[s.client_id]?.name : (s.notes || t('kinds.own'))}</div>
                   <div className="meta">{s.format === 'online' ? <span className="fmt"><Video />{t('formats.online')}</span> : t(`kinds.${s.kind}`)} · {s.duration_min}′{s.series_id ? ' ↻' : ''}</div>
+                  {dayLabel(s) && <span className="day-tag">{dayLabel(s)}</span>}
                 </div>
                 {s.status !== 'planned' ? <span className={`pill ${s.status === 'done' ? 'ok' : s.status === 'cancelled' ? 'mute' : 'warn'}`}>{t(`statuses.${s.status}`)}</span> : <ChevronRight size={18} style={{ color: 'var(--muted)' }} />}
               </button>
@@ -70,7 +74,7 @@ export default function Calendar({ data, reload, trainerId, go }) {
           </div>
         </section>
         <button className="fab" onClick={() => setEdit({ isNew: true, date: day })} aria-label={t('calendar.newSession')}><Plus /></button>
-        <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId} go={go}
+        <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId} go={go} progDays={progDays}
           onSaved={() => { setEdit(null); load(); reload() }} />
       </>
     )
@@ -103,6 +107,7 @@ export default function Calendar({ data, reload, trainerId, go }) {
                   title={`${hm(new Date(s.starts_at))} · ${s.duration_min}′ · ${t(`kinds.${s.kind}`)}`}>
                   <span className="t">{hm(new Date(s.starts_at))}{s.series_id ? ' ↻' : ''}</span>{' '}
                   {s.client_id ? byId[s.client_id]?.name : (s.notes || t('kinds.own'))}
+                  {dayLabel(s) && <span className="day-tag">{dayLabel(s)}</span>}
                   {(s.format === 'online' || s.status !== 'planned') && (
                     <div className="meta">
                       {s.format === 'online' && <span className="fmt"><Video />{t('formats.online')}</span>}
@@ -124,13 +129,13 @@ export default function Calendar({ data, reload, trainerId, go }) {
         <span style={{ '--c': 'var(--warn)' }}><i />{t('calendar.paymentDue')}</span>
       </div>
 
-      <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId} go={go}
+      <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId} go={go} progDays={progDays}
         onSaved={() => { setEdit(null); load(); reload() }} />
     </>
   )
 }
 
-function SessionModal({ edit, onClose, clients, trainerId, onSaved, go }) {
+function SessionModal({ edit, onClose, clients, trainerId, onSaved, go, progDays }) {
   const { t, locale } = useI18n()
   const run = useRun()
   const toast = useToast()
@@ -144,10 +149,10 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved, go }) {
     if (!edit) return setF(null)
     if (edit.isNew) {
       setF({ client_id: '', date: edit.date, time: '18:00', duration_min: 60, kind: 'strength', format: 'gym', meeting_url: '', location: '', notes: '',
-        status: 'planned', repeat: false, repeatDays: [isoDow(edit.date)], repeatWeeks: 8 })
+        status: 'planned', program_day_id: '', repeat: false, repeatDays: [isoDow(edit.date)], repeatWeeks: 8 })
     } else {
       const d = new Date(edit.starts_at)
-      setF({ ...edit, client_id: edit.client_id || '', date: ymd(d), time: hm(d), location: edit.location || '', notes: edit.notes || '', meeting_url: edit.meeting_url || '' })
+      setF({ ...edit, client_id: edit.client_id || '', date: ymd(d), time: hm(d), location: edit.location || '', notes: edit.notes || '', meeting_url: edit.meeting_url || '', program_day_id: edit.program_day_id || '' })
       if (edit.client_id) loadLog(edit)
     }
   }, [edit]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -162,7 +167,7 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved, go }) {
   const active = clients.filter((c) => c.active || c.id === f.client_id)
   function pickClient(e) {
     const c = clients.find((x) => x.id === e.target.value)
-    setF({ ...f, client_id: e.target.value, format: c?.mode === 'online' ? 'online' : f.format })
+    setF({ ...f, client_id: e.target.value, format: c?.mode === 'online' ? 'online' : f.format, program_day_id: '' })
   }
   const toggleDay = (n) => setF({ ...f, repeatDays: f.repeatDays.includes(n) ? f.repeatDays.filter((x) => x !== n) : [...f.repeatDays, n].sort() })
 
@@ -172,6 +177,7 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved, go }) {
       kind: f.client_id ? (f.kind === 'own' ? 'strength' : f.kind) : 'own', format: f.format,
       meeting_url: f.format === 'online' ? (f.meeting_url || null) : null,
       location: f.format === 'gym' ? (f.location || null) : null, notes: f.notes || null, status: status || f.status,
+      program_day_id: f.client_id && (progDays.byClient[f.client_id] || []).some((d) => d.id === f.program_day_id) ? f.program_day_id : null,
     }
   }
 
@@ -242,6 +248,13 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved, go }) {
             : <label className="f" htmlFor="s-loc">{t('calendar.location')}<input id="s-loc" value={f.location} onChange={set('location')} placeholder="Studio" /></label>}
         </div>
         {f.format === 'online' && <div className="meta" style={{ marginTop: -8 }}>{t('calendar.meetingHelp')}</div>}
+        {f.client_id && (progDays.byClient[f.client_id]?.length
+          ? <label className="f" htmlFor="s-day">{t('calendar.programDay')}
+              <select id="s-day" value={f.program_day_id} onChange={set('program_day_id')}>
+                <option value="">{t('calendar.noDay')}</option>
+                {progDays.byClient[f.client_id].map((d) => <option key={d.id} value={d.id}>{d.title}{d.focus ? ` · ${d.focus}` : ''}</option>)}
+              </select></label>
+          : <div className="meta">{t('calendar.programDay')}: {t('calendar.noProgram')}</div>)}
         <label className="f" htmlFor="s-notes">{t('calendar.notes')}<input id="s-notes" value={f.notes} onChange={set('notes')} /></label>
 
         {edit.isNew && (
@@ -288,7 +301,7 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved, go }) {
         </div>
       </form>
     </Modal>
-    {logOpen && <ProgramLog session={edit} client={clients.find((c) => c.id === edit.client_id)} trainerId={trainerId} go={go}
+    {logOpen && <ProgramLog session={{ ...edit, program_day_id: f.program_day_id || edit.program_day_id }} client={clients.find((c) => c.id === edit.client_id)} trainerId={trainerId} go={go}
       onClose={() => setLogOpen(false)} onSaved={() => { setLogOpen(false); onSaved() }} />}
     </>
   )
