@@ -1,4 +1,4 @@
-# Train with Kyri – Coach Dashboard (v2.1.0)
+# Train with Kyri – Coach Dashboard (v2.2.0)
 
 Web-App für Trainer und Klienten: Kalender, Klienten mit Paketen, Zahlungen (Revolut, Überweisung, Bar) und eine Client-App für das Handy. Sprachen: Englisch, Griechisch, Deutsch.
 
@@ -10,7 +10,7 @@ Stack wie beim Agentur-Dashboard: Vite + React + Supabase, Hosting auf Vercel.
 
 1. Auf supabase.com ein **neues Projekt** anlegen, z. B. `kyri-dashboard` (getrennt vom Agentur-Dashboard). Region: Frankfurt.
 2. **SQL Editor** → Inhalt von `sql/001_schema.sql` einfügen → Run.
-3. **SQL Editor** → Inhalt von `sql/003_training.sql` einfügen → Run, danach `sql/004_counting.sql` → Run, danach `sql/005_planning.sql` → Run, danach `sql/006_client_actions.sql` → Run, danach `sql/007_programs.sql` → Run, danach `sql/008_storage.sql` → Run (für eigene Videos), danach `sql/009_session_days.sql` → Run.
+3. **SQL Editor** → Inhalt von `sql/003_training.sql` einfügen → Run, danach `sql/004_counting.sql` → Run, danach `sql/005_planning.sql` → Run, danach `sql/006_client_actions.sql` → Run, danach `sql/007_programs.sql` → Run, danach `sql/008_storage.sql` → Run (für eigene Videos), danach `sql/009_session_days.sql` → Run, danach `sql/010_russian.sql` → Run.
 4. **SQL Editor** → Inhalt von `sql/002_seed_demo.sql` einfügen, **in der letzten Zeile deine E-Mail eintragen** → Run.
    - Du wirst Trainer-Admin.
    - Die 6 Fake-Klienten bekommen Aliase deiner E-Mail (z. B. `du+elena@…`). Ihre Login-Mails landen also bei dir. So kannst du die Client-App selbst testen.
@@ -49,7 +49,7 @@ In einem privaten Fenster damit anmelden → Client-Ansicht. Für die Live-Versi
 ## 4. Übergabe an Kyri
 
 1. Kyri legt eigene Konten an (Supabase, Vercel, GitHub) und lädt dich als Mitglied ein.
-2. In **seinem** Supabase: `001_schema.sql`, `003_training.sql`, `004_counting.sql`, `005_planning.sql`, `006_client_actions.sql`, `007_programs.sql`, `008_storage.sql` und `009_session_days.sql` ausführen. Kein Seed. Stattdessen einmal:
+2. In **seinem** Supabase: `001_schema.sql`, `003_training.sql`, `004_counting.sql`, `005_planning.sql`, `006_client_actions.sql`, `007_programs.sql`, `008_storage.sql`, `009_session_days.sql` und `010_russian.sql` ausführen. Kein Seed. Stattdessen einmal:
    ```sql
    insert into trainers (slug, brand_name, owner_name, tagline, default_lang)
    values ('kyri', 'Train with Kyri', 'Kyriakos Nicolaou', 'Train with purpose.', 'en');
@@ -88,7 +88,7 @@ Das Logo liegt unter `public/logo.png` (und die App-Icons daneben). Wenn du die 
 - **Fortschritt:** im Kundenprofil (nur für Kyri): Einheiten, Anwesenheit, Rekord, Steigerung pro Übung.
 - **Client-App:** Termin absagen (bis X Stunden vorher kostenlos, danach zählt es), WhatsApp-Button zu Kyri, neues Paket anfragen (Kyri nimmt an, Zahlung wird fällig), Termin in Apple-/Google-Kalender. WhatsApp-Nummer und Absagefrist stehen in den Einstellungen.
 - **Handy:** Trainer-Bereich mit App-Leiste unten (Übersicht, Kalender, Klienten, Zahlungen, Mehr → Programme, Einstellungen), Kalender als Tagesansicht, Fenster als Blatt von unten. Sprache unter „Mehr“.
-- **Sprachen:** Umschalter EN / ΕΛ / DE. Klienten starten in der Sprache, die Kyri beim Klienten eingestellt hat. Texte liegen in `src/locales/`.
+- **Sprachen:** Umschalter EN / ΕΛ / DE / RU. Klienten starten in der Sprache, die Kyri beim Klienten eingestellt hat. Texte liegen in `src/locales/`.
 - **Mehrere Trainer:** Die Datenbank ist dafür schon ausgelegt (jede Zeile gehört zu einem Trainer). Für weitere Trainer braucht es später nur ein eigenes Projekt bzw. eine Trainer-Auswahl.
 
 ## Ordner
@@ -103,7 +103,8 @@ sql/006_client_actions.sql v1.4.0: Absagen, Telefon, Paket-Anfragen
 sql/007_programs.sql    v2.0.0: Programme, kg-Verlauf, Online-Einheiten, PAR-Q, Regeln, Archiv
 sql/008_storage.sql     v2.0.0: Speicher für eigene Übungsvideos
 sql/009_session_days.sql v2.1.0: Programmtage an Terminen
-src/locales/            en.js, el.js, de.js (+ v2/ für die neuen Texte)
+sql/010_russian.sql     v2.2.0: Russisch als 4. Sprache
+src/locales/            en.js, el.js, de.js, ru.js (+ v2/ für die neuen Texte)
 src/pages/admin/        Übersicht, Kalender, Klienten, Zahlungen, Einstellungen
 src/pages/client/       Client-App
 ```

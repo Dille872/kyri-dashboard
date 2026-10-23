@@ -92,7 +92,7 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
   const top = (
     <div className="topbar">
       <div className="brand"><Logo trainer={trainer} /><div className="eyebrow">{trainer.brand_name}</div></div>
-      <div className="acts"><LangSwitch onChange={(l) => supabase.rpc('set_my_lang', { p_lang: l })} />
+      <div className="acts"><LangSwitch onChange={(l) => supabase.rpc('set_my_lang', { p_lang: l }).then(() => {})} />
         <button className="chip" onClick={signOut} aria-label={t('common.signOut')} title={t('common.signOut')}><LogOut size={14} style={{ verticalAlign: '-2px' }} /></button></div>
     </div>
   )

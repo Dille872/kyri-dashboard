@@ -2,9 +2,11 @@ import { createContext, useContext, useMemo, useState } from 'react'
 import en from './locales/en.js'
 import el from './locales/el.js'
 import de from './locales/de.js'
+import ru from './locales/ru.js'
 import en2 from './locales/v2/en.js'
 import el2 from './locales/v2/el.js'
 import de2 from './locales/v2/de.js'
+import ru2 from './locales/v2/ru.js'
 
 // v2 strings are kept in their own files and merged over the base dictionaries
 function merge(a, b) {
@@ -17,8 +19,9 @@ export const LANGS = [
   { code: 'en', label: 'English', short: 'EN', locale: 'en-GB' },
   { code: 'el', label: 'Ελληνικά', short: 'ΕΛ', locale: 'el-GR' },
   { code: 'de', label: 'Deutsch', short: 'DE', locale: 'de-DE' },
+  { code: 'ru', label: 'Русский', short: 'RU', locale: 'ru-RU' },
 ]
-export const DICTS = { en: merge(en, en2), el: merge(el, el2), de: merge(de, de2) }
+export const DICTS = { en: merge(en, en2), el: merge(el, el2), de: merge(de, de2), ru: merge(ru, ru2) }
 const KEY = 'coach-lang'
 
 function lookup(dict, path) {
