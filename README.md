@@ -1,4 +1,4 @@
-# Train with Kyri – Coach Dashboard (v3.0.0)
+# Train with Kyri – Coach Dashboard (v3.0.1)
 
 Web-App für Trainer und Klienten: Kalender, Klienten mit Paketen, Zahlungen (Revolut, Überweisung, Bar) und eine Client-App für das Handy. Sprachen: Englisch, Griechisch, Deutsch.
 

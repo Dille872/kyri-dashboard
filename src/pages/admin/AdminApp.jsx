@@ -64,8 +64,10 @@ export default function AdminApp({ trainerId, user, signOut }) {
   if (mobile) return (
     <div className="mapp">
       <header className="mtop">
-        <Logo trainer={data.trainer} />
-        <div className="mtop-txt"><b><Wordmark trainer={data.trainer} /></b><small>{t(`nav.${view}`)}</small></div>
+        <button className="home-link" onClick={() => go('overview')} aria-label={t('nav.overview')}>
+          <Logo trainer={data.trainer} />
+          <div className="mtop-txt"><b><Wordmark trainer={data.trainer} /></b><small>{t(`nav.${view}`)}</small></div>
+        </button>
       </header>
       <main className="mmain">
         {view === 'more'
@@ -89,10 +91,10 @@ export default function AdminApp({ trainerId, user, signOut }) {
   return (
     <div className="app">
       <aside className="side">
-        <div className="brand">
+        <button className="brand home-link" onClick={() => go('overview')} aria-label={t('nav.overview')}>
           <Logo trainer={data.trainer} />
           <div><b><Wordmark trainer={data.trainer} /></b><small>{t('nav.coachDashboard')}</small></div>
-        </div>
+        </button>
         <nav className="nav">
           {SIDE.map((v) => {
             const Icon = ICONS[v]

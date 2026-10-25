@@ -17,7 +17,7 @@ export default function Clients({ data, reload, trainerId, go }) {
     try { const id = sessionStorage.getItem('clients-profile'); sessionStorage.removeItem('clients-profile'); return id } catch { return null }
   })
   const run = useRun()
-  const mobile = useIsMobile()
+  const mobile = useIsMobile('(max-width: 1100px)')   // list instead of table up to tablet width
   const today = ymd()
   const pendingIds = new Set(data.pending.map((p) => p.client_id))
   const pkById = Object.fromEntries(data.packages.map((p) => [p.id, p]))

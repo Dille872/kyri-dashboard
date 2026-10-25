@@ -609,3 +609,18 @@ h2{font:700 13px/1.2 var(--body);letter-spacing:.14em}
 .step-name{font-family:var(--display);font-size:26px}
 .today-card>.btn.block{width:auto}
 .brand b .wordmark{font-size:17px}
+
+/* v3.0.1: no sideways wobble on phones, logo = home */
+html,body{overflow-x:clip;overscroll-behavior-x:none}
+dialog{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;box-sizing:border-box}
+dialog *{max-width:100%}
+dialog .seg,dialog .days{max-width:100%;flex-wrap:wrap}
+input[type="date"],input[type="time"],input[type="datetime-local"]{-webkit-appearance:none;appearance:none;display:block;min-height:42px;max-width:100%}
+input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date-and-time-value{text-align:left}
+.form,.form>*{min-width:0}
+.mapp,.mobile{max-width:100vw;overflow-x:clip}
+@media (max-width:760px){
+  dialog,dialog.wide{width:100%;max-width:100%;left:0;right:0}
+}
+.home-link{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;min-width:0;border-radius:12px}
+.home-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px}

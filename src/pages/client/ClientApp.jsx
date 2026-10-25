@@ -95,7 +95,8 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
   const pickLang = (l) => { setLang(l); supabase.rpc('set_my_lang', { p_lang: l }).then(() => {}) }
   const top = (
     <div className="topbar">
-      <div className="brand"><img className="brand-mark" src={trainer.logo_url || '/logo.png'} alt="" /><Wordmark trainer={trainer} /></div>
+      <button className="brand home-link" onClick={() => { setScreen('home'); setTab('home'); window.scrollTo(0, 0) }} aria-label={t('app.home')}>
+        <img className="brand-mark" src={trainer.logo_url || '/logo.png'} alt="" /><Wordmark trainer={trainer} /></button>
       <div className="seg lang-mini" role="group" aria-label={t('common.language')}>
         {LANGS.map((l) => <button key={l.code} aria-pressed={lang === l.code} onClick={() => pickLang(l.code)}>{l.short}</button>)}
       </div>
