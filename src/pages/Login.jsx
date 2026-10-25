@@ -1,19 +1,32 @@
 import { useState } from 'react'
-import { Mail } from 'lucide-react'
+import { Mail, LogIn, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../supabase.js'
 import { useI18n } from '../i18n.jsx'
 import { LangSwitch, Logo, Wordmark, useToast } from '../components/ui.jsx'
+import { wantPw } from '../components/SetPassword.jsx'
 
+// Sign in with email + password. First time / forgot password: a link (or 6-digit code) by email,
+// after which the app asks for a password.
 export default function Login() {
   const { t } = useI18n()
   const toast = useToast()
   const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
+  const [mode, setMode] = useState('pw')        // 'pw' | 'link' | 'sent'
+  const [why, setWhy] = useState('first')       // 'first' | 'forgot'
   const [code, setCode] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [usePw, setUsePw] = useState(false)
   const [pw, setPw] = useState('')
-  const pwAllowed = import.meta.env.VITE_PASSWORD_LOGIN === 'true'
+  const [show, setShow] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  async function signInPw(e) {
+    e.preventDefault()
+    setBusy(true)
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pw })
+    setBusy(false)
+    if (error) toast(t('login.wrongPassword2'), 'err')
+  }
+
+  function toLink(kind) { setWhy(kind); setMode('link') }
 
   async function send(e) {
     e.preventDefault()
@@ -24,15 +37,8 @@ export default function Login() {
     })
     setBusy(false)
     if (error) return toast(t('common.errorGeneric', { msg: error.message }), 'err')
-    setSent(true)
-  }
-
-  async function signInPw(e) {
-    e.preventDefault()
-    setBusy(true)
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pw })
-    setBusy(false)
-    if (error) toast(t('login.wrongPassword'), 'err')
+    if (why === 'forgot') wantPw.set()
+    setMode('sent')
   }
 
   async function verify(e) {
@@ -43,35 +49,48 @@ export default function Login() {
     if (error) toast(t('login.invalidCode'), 'err')
   }
 
+  const emailField = (id) => (
+    <label className="f" htmlFor={id}>{t('login.email')}
+      <input id={id} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+    </label>
+  )
+
   return (
     <div className="mobile login">
       <div className="topbar" style={{ justifyContent: 'flex-end' }}><LangSwitch /></div>
       <Logo big />
       {/* before sign-in the trainer isn't known yet: brand from .env (VITE_BRAND_NAME), default Train with Kyri */}
       <div className="center"><Wordmark trainer={{ brand_name: import.meta.env.VITE_BRAND_NAME || 'Train with Kyri' }} size="xl" /></div>
-      {usePw ? (
+
+      {mode === 'pw' && (
         <form className="form" onSubmit={signInPw}>
           <div className="hello center">{t('login.welcome')}</div>
-          <label className="f" htmlFor="pw-email">{t('login.email')}
-            <input id="pw-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          </label>
+          {emailField('pw-email')}
           <label className="f" htmlFor="pw-pass">{t('login.password')}
-            <input id="pw-pass" type="password" autoComplete="current-password" required value={pw} onChange={(e) => setPw(e.target.value)} />
+            <span className="pw-wrap">
+              <input id="pw-pass" type={show ? 'text' : 'password'} autoComplete="current-password" required value={pw} onChange={(e) => setPw(e.target.value)} />
+              <button type="button" className="pw-eye" onClick={() => setShow(!show)} aria-label={show ? t('pw.hide') : t('pw.show')}>{show ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+            </span>
           </label>
-          <button className="btn block" disabled={busy}>{t('login.signIn')}</button>
-          <button type="button" className="btn ghost block" onClick={() => setUsePw(false)}>{t('login.withLink')}</button>
+          <button className="btn block" disabled={busy}><LogIn />{t('login.signIn')}</button>
+          <div className="login-links">
+            <button type="button" className="linkish" onClick={() => toLink('first')}>{t('login.firstTime')}</button>
+            <button type="button" className="linkish" onClick={() => toLink('forgot')}>{t('login.forgot')}</button>
+          </div>
         </form>
-      ) : !sent ? (
+      )}
+
+      {mode === 'link' && (
         <form className="form" onSubmit={send}>
-          <div className="hello center">{t('login.welcome')}</div>
-          <p className="meta center" style={{ margin: 0 }}>{t('login.subtitle')}</p>
-          <label className="f" htmlFor="login-email">{t('login.email')}
-            <input id="login-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          </label>
+          <div className="hello center">{why === 'forgot' ? t('login.forgotTitle') : t('login.firstTitle')}</div>
+          <p className="meta center" style={{ margin: 0 }}>{why === 'forgot' ? t('login.forgotBody') : t('login.firstBody')}</p>
+          {emailField('login-email')}
           <button className="btn block" disabled={busy}><Mail />{t('login.send')}</button>
-          {pwAllowed && <button type="button" className="btn ghost block" onClick={() => setUsePw(true)}>{t('login.withPassword')}</button>}
+          <button type="button" className="btn ghost block" onClick={() => setMode('pw')}>{t('login.backToPw')}</button>
         </form>
-      ) : (
+      )}
+
+      {mode === 'sent' && (
         <form className="form" onSubmit={verify}>
           <div className="circle"><Mail /></div>
           <div className="hello center">{t('login.sentTitle')}</div>
@@ -81,7 +100,7 @@ export default function Login() {
               value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
           </label>
           <button className="btn block" disabled={busy || code.length < 6}>{t('login.verify')}</button>
-          <button type="button" className="btn ghost block" onClick={() => { setSent(false); setCode('') }}>{t('login.otherEmail')}</button>
+          <button type="button" className="btn ghost block" onClick={() => { setMode('link'); setCode('') }}>{t('login.otherEmail')}</button>
         </form>
       )}
     </div>

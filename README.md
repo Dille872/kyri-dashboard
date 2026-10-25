@@ -1,4 +1,4 @@
-# Train with Kyri – Coach Dashboard (v4.1.0)
+# Train with Kyri – Coach Dashboard (v4.2.0)
 
 Web-App für Trainer und Klienten: Kalender, Klienten mit Paketen, Zahlungen (Revolut, Überweisung, Bar) und eine Client-App für das Handy. Sprachen: Englisch, Griechisch, Deutsch.
 
@@ -36,7 +36,7 @@ Dann http://localhost:5173 öffnen, mit deiner E-Mail anmelden → Trainer-Ansic
 
 **Client-Ansicht testen (ohne Mails):** In Supabase → Authentication → Users → *Add user* → *Create new user*:
 E-Mail `du+elena@…` (genau wie im Seed), ein Passwort, *Auto Confirm User* anhaken.
-In `.env.local` steht `VITE_PASSWORD_LOGIN=true`, dann gibt es auf der Login-Seite „Test-Login mit Passwort“.
+Seit v4.2.0 gibt es den Login mit E-Mail + Passwort für alle (die Variable `VITE_PASSWORD_LOGIN` wird nicht mehr gebraucht).
 In einem privaten Fenster damit anmelden → Client-Ansicht. Für die Live-Version diese Zeile weglassen.
 
 ## 3. Online stellen (Vercel)
@@ -151,3 +151,12 @@ Einrichtung:
 3. Supabase → Edge Functions → Secrets: `DEEPL_API_KEY` = Schlüssel.
 4. Supabase → Edge Functions → Deploy a new function → Via Editor, Name `translate`, Inhalt von `supabase/functions/translate/index.ts` einfügen, Deploy.
    In den Einstellungen der Funktion „Verify JWT with legacy secret“ ausschalten (die Funktion prüft den Login selbst).
+
+## Login mit Passwort (v4.2.0)
+
+- Anmeldeseite: E-Mail + Passwort.
+- „Zum ersten Mal hier?“ → Link/Code per E-Mail → danach legt man einmal ein Passwort fest (mind. 8 Zeichen, „Später“ möglich).
+- „Passwort vergessen?“ → Link per E-Mail → danach neues Passwort festlegen.
+- Passwort ändern: Kunden unter Profil, Kyri unter Einstellungen → Anmeldung.
+- Supabase: Authentication → Sign In / Providers → Email muss aktiv sein (Standard). „Secure password change“ ausgeschaltet lassen, sonst klappt „Passwort ändern“ nur direkt nach einer Anmeldung.
+- Keine SQL-Änderung nötig.

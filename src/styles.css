@@ -652,3 +652,10 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
 
 /* v4.1 translation */
 .tr-toggle { background: none; border: 0; padding: 0 2px; font: inherit; font-size: 11px; font-weight: 600; color: var(--accent-ink, var(--accent)); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-style: normal; white-space: nowrap; }
+
+/* v4.2 password login */
+.pw-wrap { position: relative; display: block; }
+.pw-wrap input { width: 100%; padding-right: 46px; }
+.pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: 0; color: var(--muted, #9a9a9a); padding: 8px; cursor: pointer; display: grid; place-items: center; }
+.login-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 2px; }
+.login-links .linkish { font-size: 14px; font-weight: 600; color: var(--accent-ink, var(--accent)); }

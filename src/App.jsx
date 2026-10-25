@@ -6,10 +6,12 @@ import Login from './pages/Login.jsx'
 import NoAccess from './pages/NoAccess.jsx'
 import AdminApp from './pages/admin/AdminApp.jsx'
 import ClientApp from './pages/client/ClientApp.jsx'
+import { SetPasswordScreen, needsPassword, wantPw } from './components/SetPassword.jsx'
 
 export default function App() {
   const [session, setSession] = useState(undefined)   // undefined = still checking
   const [access, setAccess] = useState(null)
+  const [pwLater, setPwLater] = useState(false)
 
   useEffect(() => {
     if (!configured) return
@@ -33,6 +35,9 @@ export default function App() {
   if (!session) return <Login />
 
   const signOut = () => supabase.auth.signOut()
+  const hasAccess = access.admin_of?.length || access.client_of?.length
+  if (hasAccess && !pwLater && needsPassword(session))
+    return <SetPasswordScreen onDone={() => setPwLater(true)} onLater={() => { wantPw.clear(); setPwLater(true) }} />
   if (access.admin_of?.length) return <AdminApp trainerId={access.admin_of[0]} user={session.user} signOut={signOut} />
   if (access.client_of?.length) return <ClientApp clientId={access.client_of[0].client_id} trainerId={access.client_of[0].trainer_id} signOut={signOut} />
   return <NoAccess email={session.user.email} signOut={signOut} />

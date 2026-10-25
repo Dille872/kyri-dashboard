@@ -54,6 +54,7 @@ export default {
     tapToLog: 'Name antippen zum Eintragen',
   },
   clients: {
+    invite: "Hi {name}! Das ist deine Klienten-Seite bei {brand}: {url}\nBeim ersten Mal: auf „Zum ersten Mal hier?“ tippen und {email} eingeben. Du bekommst einen Link per E-Mail und legst dann dein Passwort fest. Danach meldest du dich einfach mit E-Mail + Passwort an.",
     subtitle2: 'Archivieren statt löschen: Alles bleibt erhalten (Programm, Verlauf, Zahlungen, PAR-Q). Archivierte Kunden können sich nicht anmelden.',
     tabActive: 'Aktiv ({n})', tabArchived: 'Archiviert ({n})', search: 'Kunden suchen…', archive: 'Archivieren', reactivate: 'Reaktivieren',
     archivedOn: 'Archiviert am {date}', archivedToast: '{name} archiviert', reactivatedToast: '{name} ist wieder aktiv',
@@ -108,4 +109,6 @@ export default {
     equipment: { smith: 'Smith-Maschine', barbell: 'Langhantel', dumbbells: 'Kurzhanteln', kettlebell: 'Kettlebell', sled: 'Schlitten', rower: 'Rudergerät', bike: 'Assault Bike', ball: 'Medizinball', trx: 'TRX', box: 'Box / Bank' },
   },
   tr: { title: "Übersetzung", help: "Deine Texte (Regeln, PAR-Q, Datenschutz, Übungshinweise, Paketnamen, Tageshinweise) werden automatisch in die Sprache jedes Kunden übersetzt. Übungsnamen bleiben, wie du sie schreibst.", comments: "Kundenkommentare für mich übersetzen", commentsHelp: "Übungskommentare, Session-Notizen und PAR-Q-Erklärungen erscheinen in deiner Sprache, das Original ist einen Tipp entfernt. Sie können Gesundheitsangaben enthalten – nur mit einem bezahlten DeepL-Tarif einschalten (dort werden Texte nicht gespeichert).", showOriginal: "Original", showTranslation: "Übersetzung" },
+  login: { wrongPassword2: "E-Mail oder Passwort falsch. Noch kein Passwort? Tippe auf „Zum ersten Mal hier?“.", firstTime: "Zum ersten Mal hier?", forgot: "Passwort vergessen?", firstTitle: "Erste Anmeldung", firstBody: "Gib die E-Mail ein, die dein Trainer von dir hat. Wir schicken dir einen Link – danach legst du dein Passwort fest.", forgotTitle: "Neues Passwort", forgotBody: "Gib deine E-Mail ein. Wir schicken dir einen Link – danach legst du ein neues Passwort fest.", backToPw: "Zurück zur Anmeldung mit Passwort" },
+  pw: { title: "Passwort festlegen", why: "Ab jetzt meldest du dich mit E-Mail und diesem Passwort an – ohne E-Mail-Link.", new: "Neues Passwort", repeat: "Passwort wiederholen", rule: "Mindestens {n} Zeichen.", mismatch: "Die beiden Passwörter stimmen nicht überein.", save: "Passwort speichern", saved: "Passwort gespeichert", error: "Passwort konnte nicht gespeichert werden: {msg}", later: "Später", show: "Passwort anzeigen", hide: "Passwort verbergen", change: "Passwort ändern", login: "Anmeldung", loginHelp: "Du meldest dich mit E-Mail und Passwort an. Vergessen? Auf der Anmeldeseite „Passwort vergessen?“ antippen." },
 }

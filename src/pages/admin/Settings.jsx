@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Plus, Trash2, Copy, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { DICTS, LANGS, useI18n } from '../../i18n.jsx'
-import { copyText, useRun, useToast } from '../../components/ui.jsx'
+import { Modal, copyText, useRun, useToast } from '../../components/ui.jsx'
+import { PasswordForm } from '../../components/SetPassword.jsx'
 
 const FIELDS = ['brand_name', 'owner_name', 'tagline', 'account_name', 'iban', 'bic', 'revolut_url', 'default_lang', 'phone', 'cancel_hours', 'rules_text', 'reminder_days', 'contact_email', 'privacy_text']
 const NUMBERS = ['cancel_hours', 'reminder_days']
@@ -16,6 +17,7 @@ export default function Settings({ data, reload, trainerId }) {
   useEffect(() => setPkgs(data.packages), [data.packages])
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
   const [trc, setTrc] = useState(!!data.trainer.translate_comments)
+  const [pwOpen, setPwOpen] = useState(false)
 
   async function saveTrainer(e) {
     e.preventDefault()
@@ -115,6 +117,13 @@ export default function Settings({ data, reload, trainerId }) {
         </div>
       </div>
       <ParqEditor trainer={data.trainer} trainerId={trainerId} reload={reload} />
+      <section className="panel" style={{ marginTop: 14 }}>
+        <div className="panel-h"><h2>{t('pw.login')}</h2><button className="chip" onClick={() => setPwOpen(true)}>{t('pw.change')}</button></div>
+        <div className="meta">{t('pw.loginHelp')}</div>
+      </section>
+      <Modal open={pwOpen} title={t('pw.change')} onClose={() => setPwOpen(false)}>
+        {pwOpen && <PasswordForm onDone={() => setPwOpen(false)} />}
+      </Modal>
     </>
   )
 }

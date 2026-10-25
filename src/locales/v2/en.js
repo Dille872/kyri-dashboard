@@ -55,6 +55,7 @@ export default {
     tapToLog: 'tap the name to log',
   },
   clients: {
+    invite: "Hi {name}! This is your client page for {brand}: {url}\nFirst time: tap “First time here?” and enter {email}. You’ll get a link by email and then choose your password. After that you just sign in with email + password.",
     subtitle2: 'Archive instead of delete: everything stays (program, history, payments, PAR-Q). Archived clients can’t sign in.',
     tabActive: 'Active ({n})', tabArchived: 'Archived ({n})', search: 'Search clients…', archive: 'Archive', reactivate: 'Reactivate',
     archivedOn: 'Archived {date}', archivedToast: '{name} archived', reactivatedToast: '{name} is active again',
@@ -109,4 +110,6 @@ export default {
     equipment: { smith: 'Smith machine', barbell: 'Barbell', dumbbells: 'Dumbbells', kettlebell: 'Kettlebell', sled: 'Sled', rower: 'Rower', bike: 'Assault bike', ball: 'Medicine ball', trx: 'TRX', box: 'Box / bench' },
   },
   tr: { title: "Translation", help: "Your texts (rules, PAR-Q, privacy notice, exercise notes, package names, day notes) are translated automatically into each client’s language. Exercise names stay as you write them.", comments: "Also translate client comments for me", commentsHelp: "Exercise comments, session notes and PAR-Q explanations appear in your language, with the original one tap away. They may contain health details – only turn this on with a paid DeepL plan (texts are not stored there).", showOriginal: "Original", showTranslation: "Translation" },
+  login: { wrongPassword2: "Email or password is wrong. No password yet? Tap “First time here?”.", firstTime: "First time here?", forgot: "Forgot password?", firstTitle: "First sign-in", firstBody: "Enter the email your trainer has on file. We’ll send you a link – after that you choose your password.", forgotTitle: "New password", forgotBody: "Enter your email. We’ll send you a link – after that you choose a new password.", backToPw: "Back to sign-in with password" },
+  pw: { title: "Choose your password", why: "From now on you sign in with your email and this password – no more emails.", new: "New password", repeat: "Repeat password", rule: "At least {n} characters.", mismatch: "The two passwords don’t match.", save: "Save password", saved: "Password saved", error: "Couldn’t save the password: {msg}", later: "Later", show: "Show password", hide: "Hide password", change: "Change password", login: "Sign-in", loginHelp: "You sign in with your email and password. Forgot it? Use “Forgot password?” on the sign-in page." },
 }
