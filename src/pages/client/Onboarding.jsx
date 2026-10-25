@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { ShieldCheck, ScrollText } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
-import { useRun } from '../../components/ui.jsx'
+import { Modal, useRun } from '../../components/ui.jsx'
+import PrivacyText from '../../components/Privacy.jsx'
 
 // First sign-in: 1. PAR-Q health questions (Kyri's own list), 2. Kyri's rules. The app opens after both.
 export function ParqScreen({ client, trainer, top, onDone }) {
@@ -13,16 +14,18 @@ export function ParqScreen({ client, trainer, top, onDone }) {
   const [why, setWhy] = useState('')
   const [name, setName] = useState(client.name)
   const [ok, setOk] = useState(false)
+  const [consent, setConsent] = useState(false)
+  const [privacyOpen, setPrivacyOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const tr = (trainer.owner_name || trainer.brand_name).split(' ')[0]
   const answered = qs.every((q, i) => q.type !== 'yn' || typeof ans[i] === 'boolean')
   const anyYes = qs.some((q, i) => q.type === 'yn' && q.flag && ans[i] === true)
-  const ready = answered && (!anyYes || why.trim()) && name.trim() && ok
+  const ready = answered && (!anyYes || why.trim()) && name.trim() && ok && consent
 
   async function submit() {
     setBusy(true)
     const answers = qs.map((q, i) => (q.type === 'yn' ? { ...q, answer: ans[i] } : { ...q, text: String(ans[i] || '').trim() }))
-    const r = await run(supabase.rpc('submit_parq', { p_client: client.id, p_answers: answers, p_explanation: anyYes ? why : '', p_name: name }))
+    const r = await run(supabase.rpc('submit_parq', { p_client: client.id, p_answers: answers, p_explanation: anyYes ? why : '', p_name: name, p_consent: consent }))
     setBusy(false)
     if (r.ok) { window.scrollTo(0, 0); onDone() }
   }
@@ -53,7 +56,13 @@ export function ParqScreen({ client, trainer, top, onDone }) {
       <label className="f" htmlFor="pq-name">{t('onboard.name')}<input id="pq-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
       <label className="check-row" htmlFor="pq-ok" style={{ alignItems: 'flex-start' }}><input id="pq-ok" type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} style={{ marginTop: 2 }} />
         <span style={{ fontWeight: 500 }}>{t('onboard.confirm', { trainer: tr })}</span></label>
+      <label className="check-row" htmlFor="pq-consent" style={{ alignItems: 'flex-start' }}><input id="pq-consent" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2 }} />
+        <span style={{ fontWeight: 500 }}>{t('privacy.consent', { trainer: tr })}</span></label>
+      <button type="button" className="chip" style={{ alignSelf: 'flex-start' }} onClick={() => setPrivacyOpen(true)}>{t('privacy.read')}</button>
       <button className="btn block" disabled={!ready || busy} onClick={submit}><ShieldCheck />{t('onboard.continue')}</button>
+      <Modal open={privacyOpen} title={t('privacy.title')} onClose={() => setPrivacyOpen(false)}>
+        {privacyOpen && <PrivacyText trainer={trainer} />}
+      </Modal>
     </div>
   )
 }

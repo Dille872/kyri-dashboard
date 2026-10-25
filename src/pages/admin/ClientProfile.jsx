@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ArrowLeft, Pencil, Copy, Dumbbell, Video, Archive, RotateCcw, AlertTriangle } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
-import { useRun, useToast } from '../../components/ui.jsx'
+import { Modal, useRun, useToast } from '../../components/ui.jsx'
 import { Duration } from '../../components/ui.jsx'
 import Progress from '../../components/Progress.jsx'
 import ProgramLog from '../../components/ProgramLog.jsx'
@@ -19,6 +19,7 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
   const [logFor, setLogFor] = useState(null)
   const [showParq, setShowParq] = useState(false)
   const [refresh, setRefresh] = useState(0)
+  const [delOpen, setDelOpen] = useState(false)
 
   const load = useCallback(async () => {
     const now = new Date().toISOString()
@@ -49,6 +50,11 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
   async function reviewed() {
     const r = await run(supabase.from('parq_responses').update({ reviewed_at: new Date().toISOString() }).eq('id', d.parq.id))
     if (r.ok) { toast(t('profile.parqReviewedToast')); setRefresh((n) => n + 1) }
+  }
+  // GDPR deletion request: only for archived clients, removes the client and everything linked to them
+  async function deleteForever() {
+    const r = await run(supabase.from('clients').delete().eq('id', client.id))
+    if (r.ok) { toast(t('privacy.deleted', { name: client.name })); setDelOpen(false); reload?.(); onBack() }
   }
   async function resetParq() {
     const r = await run(supabase.from('clients').update({ parq_at: null }).eq('id', client.id))
@@ -191,6 +197,26 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
           ))}
         </div>
       </section>
+
+      {!client.active && (
+        <section className="panel" style={{ marginTop: 14 }}>
+          <div className="row" style={{ borderTop: 0, padding: 0 }}>
+            <div><div className="name">{t('privacy.deleteForever')}</div><div className="meta">{t('privacy.deleteHelp')}</div></div>
+            <button className="btn danger small" onClick={() => setDelOpen(true)}>{t('privacy.deleteForever')}</button>
+          </div>
+        </section>
+      )}
+      <Modal open={delOpen} title={t('privacy.deleteForever')} onClose={() => setDelOpen(false)}>
+        {delOpen && (
+          <div className="form">
+            <div className="notice warn-box">{t('privacy.deleteConfirm', { name: client.name })}</div>
+            <div className="modal-foot">
+              <button className="btn ghost" onClick={() => setDelOpen(false)}>{t('common.cancel')}</button>
+              <button className="btn danger" onClick={deleteForever}>{t('privacy.deleteYes')}</button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <ProgramLog session={logFor} client={logFor ? client : null} trainerId={trainerId} go={go}
         onClose={() => setLogFor(null)} onSaved={() => { setLogFor(null); setRefresh((n) => n + 1); reload?.() }} />

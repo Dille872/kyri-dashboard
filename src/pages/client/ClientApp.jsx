@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Clock, Copy, LogOut, Video, CalendarPlus, X, MessageCircle, PackagePlus, ScrollText, Bell, Home, CalendarDays, CreditCard, User, ChevronRight } from 'lucide-react'
+import { Check, Clock, Copy, LogOut, Video, CalendarPlus, X, MessageCircle, PackagePlus, ScrollText, Bell, Home, CalendarDays, CreditCard, User, ChevronRight, ShieldCheck } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { LANGS } from '../../i18n.jsx'
@@ -10,6 +10,7 @@ import { packStatus } from '../../lib/pack.js'
 import { ParqScreen, RulesScreen } from './Onboarding.jsx'
 import OnlineSession, { TodayCard } from './OnlineSession.jsx'
 import { MethodTag } from '../admin/Payments.jsx'
+import PrivacyText from '../../components/Privacy.jsx'
 
 export default function ClientApp({ clientId, trainerId, signOut }) {
   const { t, locale, lang, setLang } = useI18n()
@@ -18,6 +19,7 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
   const [d, setD] = useState(null)
   const [screen, setScreen] = useState('home')   // home | pay | sent | session
   const [rulesOpen, setRulesOpen] = useState(false)
+  const [privacyOpen, setPrivacyOpen] = useState(false)
   const [tab, setTab] = useState('home')          // home | sessions | money | profile
   const [busy, setBusy] = useState(false)
   const [cancelFor, setCancelFor] = useState(null)    // session to cancel
@@ -303,6 +305,7 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
           <div className="card" style={{ padding: 6 }}>
             {trainer.rules_text && <button className="menu-row" onClick={() => setRulesOpen(true)}><ScrollText /><span>{t('onboard.myRules')}</span><ChevronRight className="chev" /></button>}
             {wa && <a className="menu-row" href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle /><span>{t('client.writeTrainer', { trainer: trainerName })}</span><ChevronRight className="chev" /></a>}
+            <button className="menu-row" onClick={() => setPrivacyOpen(true)}><ShieldCheck /><span>{t('privacy.menu')}</span><ChevronRight className="chev" /></button>
           </div>
           <div className="card">
             <div className="lab" style={{ marginBottom: 10 }}>{t('common.language')}</div>
@@ -326,6 +329,10 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
           </button>
         ))}
       </nav>
+
+      <Modal open={privacyOpen} title={t('privacy.title')} onClose={() => setPrivacyOpen(false)}>
+        {privacyOpen && <PrivacyText trainer={trainer} />}
+      </Modal>
 
       <Modal open={rulesOpen} title={t('onboard.myRules')} onClose={() => setRulesOpen(false)}>
         {rulesOpen && (

@@ -1,4 +1,4 @@
-# Train with Kyri – Coach Dashboard (v3.2.0)
+# Train with Kyri – Coach Dashboard (v4.0.0)
 
 Web-App für Trainer und Klienten: Kalender, Klienten mit Paketen, Zahlungen (Revolut, Überweisung, Bar) und eine Client-App für das Handy. Sprachen: Englisch, Griechisch, Deutsch.
 
@@ -109,6 +109,10 @@ sql/009_session_days.sql v2.1.0: Programmtage an Terminen
 sql/010_russian.sql     v2.2.0: Russisch als 4. Sprache
 sql/011_client_stats.sql v3.0.0: Zahlen für die Kunden-Startseite (Woche, Monat, Anwesenheit)
 sql/012_session_comments.sql v3.1.0: Kommentar pro Übung, echte vs. geplante Dauer
+sql/013_privacy.sql     v4.0.0: Datenschutz, Einwilligung beim PAR-Q, Kontakt-E-Mail
+sql/LIVE_SETUP.sql      Kyris echtes System anlegen (statt Seed)
+supabase/email-magic-link.html  Login-Mail im Kyri-Look
+.github/workflows/backup.yml    wöchentliche verschlüsselte Sicherung
 src/locales/            en.js, el.js, de.js, ru.js (+ v2/ für die neuen Texte)
 src/pages/admin/        Übersicht, Kalender, Klienten, Zahlungen, Einstellungen
 src/pages/client/       Client-App
@@ -118,3 +122,16 @@ src/pages/client/       Client-App
 
 - **Automatische Nachrichten:** E-Mail (z. B. Resend mit Kyris eigener Domain) zusätzlich zum Hinweis in der App, z. B. Paket-Erinnerung.
 - **Automatische Übersetzung:** Was Kyri schreibt (Regeln, PAR-Q-Fragen, Übungshinweise, Notizen vor dem Training, Paketnamen), wird beim Speichern einmal per DeepL in die Kundensprache übersetzt und in der Datenbank gespeichert. Notizen und PAR-Q-Erklärungen der Kunden sieht Kyri in seiner Sprache. Jeweils „Original anzeigen“; bei PAR-Q und Regeln Hinweis „automatisch übersetzt“. Übungsnamen bleiben unübersetzt. Braucht: DeepL-API-Schlüssel + Supabase Edge Function.
+
+
+## Livegang: Kyris echtes System (Demo bleibt bestehen)
+
+1. **Supabase:** neues Projekt `kyri-live`, Region **Frankfurt (eu-central-1)**. SQL Editor: `001`, dann `003` bis `013` der Reihe nach, dann `LIVE_SETUP.sql`. **Kein** `002_seed_demo.sql`.
+2. **Mail-Versand (Resend):** Konto anlegen → Domains → Kyris Domain hinzufügen → die angezeigten DNS-Einträge beim Domain-Anbieter eintragen → „Verify“. API Keys → neuen Schlüssel kopieren.
+3. **Supabase → Authentication → Emails → SMTP Settings:** Enable custom SMTP · Host `smtp.resend.com` · Port `465` · User `resend` · Password = Resend-Schlüssel · Absender `login@seinedomain.com`, Name `Train with Kyri`. Danach unter „Templates“ bei **Magic Link** und **Confirm signup** den Inhalt von `supabase/email-magic-link.html` einfügen. Unter Authentication → Rate Limits die E-Mail-Grenze z. B. auf 30/Stunde setzen.
+4. **Vercel:** Add New → Project → dasselbe GitHub-Repo erneut importieren, Name `kyri-live`. Environment Variables: `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY` vom **neuen** Projekt; `VITE_PASSWORD_LOGIN` **weglassen**. Deploy. Settings → Domains → `app.seinedomain.com` hinzufügen und den angezeigten CNAME beim Domain-Anbieter eintragen.
+5. **Supabase → Authentication → URL Configuration:** Site URL `https://app.seinedomain.com`, Redirect URLs `https://app.seinedomain.com/**`.
+6. **Sicherung:** GitHub → Repo → Settings → Secrets and variables → Actions: `SUPABASE_DB_URL` (Supabase → Connect → Session pooler, mit DB-Passwort) und `BACKUP_PASSPHRASE` (langes Passwort, gut aufheben). Actions → Backup → „Run workflow“ einmal testen.
+7. **Kyri:** meldet sich mit `trainwithkyri1@outlook.com` an (Link per Mail) → Einstellungen: Bankdaten, Revolut, WhatsApp, Pakete, Regeln, Datenschutz-E-Mail → Klienten anlegen → „Einladung kopieren“ per WhatsApp an die Kunden → Programme aus den Notizen einfügen.
+
+Beide Systeme laufen aus demselben Code: Jeder `git push` aktualisiert Demo und Live gleichzeitig. Die Daten sind komplett getrennt.

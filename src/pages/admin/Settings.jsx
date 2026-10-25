@@ -4,7 +4,7 @@ import { supabase } from '../../supabase.js'
 import { DICTS, LANGS, useI18n } from '../../i18n.jsx'
 import { copyText, useRun, useToast } from '../../components/ui.jsx'
 
-const FIELDS = ['brand_name', 'owner_name', 'tagline', 'account_name', 'iban', 'bic', 'revolut_url', 'default_lang', 'phone', 'cancel_hours', 'rules_text', 'reminder_days']
+const FIELDS = ['brand_name', 'owner_name', 'tagline', 'account_name', 'iban', 'bic', 'revolut_url', 'default_lang', 'phone', 'cancel_hours', 'rules_text', 'reminder_days', 'contact_email', 'privacy_text']
 const NUMBERS = ['cancel_hours', 'reminder_days']
 
 export default function Settings({ data, reload, trainerId }) {
@@ -70,6 +70,9 @@ export default function Settings({ data, reload, trainerId }) {
           <h2 style={{ marginTop: 10 }}>{t('settings.rules')}</h2>
           <div className="meta" style={{ marginTop: -8 }}>{t('settings.rulesHelp')}</div>
           <textarea id="t-rules" aria-label={t('settings.rules')} rows={6} value={f.rules_text} onChange={set('rules_text')} />
+          <h2 style={{ marginTop: 10 }}>{t('privacy.title')}</h2>
+          <label className="f" htmlFor="t-pmail">{t('privacy.contactEmail')}<input id="t-pmail" type="email" value={f.contact_email} onChange={set('contact_email')} placeholder="you@example.com" /></label>
+          <label className="f" htmlFor="t-ptext">{t('privacy.privacyText')}<textarea id="t-ptext" rows={4} value={f.privacy_text} onChange={set('privacy_text')} /><small>{t('privacy.privacyHelp')}</small></label>
           <h2 style={{ marginTop: 10 }}>{t('settings.reminder')}</h2>
           <label className="f" htmlFor="t-remind">{t('settings.reminderDays')}<input id="t-remind" type="number" min="1" max="14" value={f.reminder_days} onChange={set('reminder_days')} style={{ maxWidth: 120 }} /><small>{t('settings.reminderHelp')}</small></label>
           <div className="modal-foot"><button className="btn">{t('common.save')}</button></div>

@@ -27,6 +27,14 @@ export default {
     programDay: 'Program day', noDay: '– not set –', noProgram: 'No program yet',
   },
   app: { home: 'Home', sessions: 'Sessions', money: 'Payments', profile: 'Profile', welcome: 'Welcome back,', thisWeek: 'This week', yourProgress: 'Your progress', statSessions: 'Sessions', thisMonth: 'this month', statPack: 'Pack', stillLeft: 'left', attendance: 'Attendance', tileSessions: 'Sessions', tilePay: 'Pay', tileChat: 'WhatsApp', tileRules: 'My rules', allSessions: 'All', noUpcoming: 'No sessions booked.', coach: 'Your coach', notifications: 'Notifications' },
+  privacy: {
+    title: 'Privacy', consent: 'I agree that {trainer} stores my health answers to plan my training safely. I can withdraw this anytime.',
+    read: 'Read the privacy notice', menu: 'Privacy', contactEmail: 'E-mail for privacy questions', privacyText: 'Privacy notice (optional)',
+    privacyHelp: 'Empty = the standard text of the app. Clients see it at the PAR-Q and under Profile.',
+    deleteForever: 'Delete permanently', deleteConfirm: 'Really delete {name} and ALL data (sessions, payments, PAR-Q, program)? This cannot be undone.',
+    deleteYes: 'Yes, delete everything', deleted: '{name} was deleted', deleteHelp: 'For deletion requests. Only archived clients can be deleted.',
+    text: `Who is responsible\n{owner} ({brand}), e-mail: {email}\n\nWhat is stored\nYour name, e-mail, phone number and language; your sessions, packs and payments; your training records (exercises, weights, notes); and your answers to the health questionnaire (PAR-Q).\n\nWhy\nTo plan and run your training, manage bookings and payments. Your health answers are only used to train you safely and are stored only with your explicit consent.\n\nWho can see it\nOnly {owner}. The app runs on servers of Supabase (database, EU) and Vercel (website); e-mails are sent by an e-mail service. They only process the data on our behalf.\n\nHow long\nAs long as you train with {owner}. Afterwards your data is archived and deleted on request.\n\nYour rights\nYou can ask at any time to see, correct or delete your data, and you can withdraw your consent for the health answers. Just write to {email}.`,
+  },
   media: {
     note: 'Note for the client', notePh: 'e.g. Keep your back straight, slow on the way down', video: 'How-to video',
     yt: 'YouTube link', file: 'Upload own video', fileHelp: 'MP4 or MOV from your phone, up to 50 MB.', current: 'Current video',

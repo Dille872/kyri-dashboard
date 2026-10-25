@@ -26,6 +26,14 @@ export default {
     programDay: 'Programmtag', noDay: '– noch offen –', noProgram: 'Noch kein Programm',
   },
   app: { home: 'Start', sessions: 'Termine', money: 'Zahlungen', profile: 'Profil', welcome: 'Willkommen zurück,', thisWeek: 'Diese Woche', yourProgress: 'Dein Fortschritt', statSessions: 'Einheiten', thisMonth: 'diesen Monat', statPack: 'Paket', stillLeft: 'noch übrig', attendance: 'Anwesenheit', tileSessions: 'Termine', tilePay: 'Bezahlen', tileChat: 'WhatsApp', tileRules: 'Meine Regeln', allSessions: 'Alle', noUpcoming: 'Keine Termine gebucht.', coach: 'Dein Coach', notifications: 'Benachrichtigungen' },
+  privacy: {
+    title: 'Datenschutz', consent: 'Ich willige ein, dass {trainer} meine Gesundheitsangaben speichert, um mein Training sicher zu planen. Ich kann das jederzeit widerrufen.',
+    read: 'Datenschutzerklärung lesen', menu: 'Datenschutz', contactEmail: 'E-Mail für Datenschutzfragen', privacyText: 'Datenschutzerklärung (optional)',
+    privacyHelp: 'Leer = Standardtext der App. Kunden sehen sie beim PAR-Q und im Profil.',
+    deleteForever: 'Endgültig löschen', deleteConfirm: '{name} und ALLE Daten (Termine, Zahlungen, PAR-Q, Programm) wirklich löschen? Das lässt sich nicht rückgängig machen.',
+    deleteYes: 'Ja, alles löschen', deleted: '{name} wurde gelöscht', deleteHelp: 'Für Löschanfragen. Nur archivierte Kunden können gelöscht werden.',
+    text: `Verantwortlich\n{owner} ({brand}), E-Mail: {email}\n\nWelche Daten\nDein Name, E-Mail, Telefonnummer und Sprache; deine Termine, Pakete und Zahlungen; deine Trainingsaufzeichnungen (Übungen, Gewichte, Notizen) und deine Antworten im Gesundheitsfragebogen (PAR-Q).\n\nWofür\nUm dein Training zu planen und durchzuführen sowie Termine und Zahlungen zu verwalten. Deine Gesundheitsangaben werden nur genutzt, um dich sicher zu trainieren, und nur mit deiner ausdrücklichen Einwilligung gespeichert.\n\nWer sie sieht\nNur {owner}. Die App läuft auf Servern von Supabase (Datenbank, EU) und Vercel (Website); E-Mails verschickt ein E-Mail-Dienst. Sie verarbeiten die Daten nur in unserem Auftrag.\n\nWie lange\nSolange du bei {owner} trainierst. Danach werden deine Daten archiviert und auf Wunsch gelöscht.\n\nDeine Rechte\nDu kannst jederzeit Auskunft, Berichtigung oder Löschung verlangen und deine Einwilligung zu den Gesundheitsangaben widerrufen. Schreib einfach an {email}.`,
+  },
   media: {
     note: 'Hinweis für den Kunden', notePh: 'z. B. Rücken gerade, langsam ablassen', video: 'Technik-Video',
     yt: 'YouTube-Link', file: 'Eigenes Video hochladen', fileHelp: 'MP4 oder MOV vom Handy, bis 50 MB.', current: 'Aktuelles Video',
