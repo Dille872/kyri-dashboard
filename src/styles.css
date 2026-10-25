@@ -671,3 +671,9 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area
   .mobile .topbar{gap:8px}
   .two-btn{grid-template-columns:1fr}
 }
+
+/* v4.2.2 iPhone home-screen app: keep header out of the iOS edge blur, tighter tab bar without the gap below */
+.mobile{padding-top:max(18px,calc(env(safe-area-inset-top) + 14px))}
+.tabbar{padding-bottom:max(6px,calc(env(safe-area-inset-bottom) - 12px))}
+.tabbar::after{content:'';position:absolute;left:0;right:0;top:100%;height:80px;background:inherit;pointer-events:none}
+html{background:var(--bg)}
