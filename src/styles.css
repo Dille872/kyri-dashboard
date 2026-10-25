@@ -659,3 +659,15 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
 .pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: 0; color: var(--muted, #9a9a9a); padding: 8px; cursor: pointer; display: grid; place-items: center; }
 .login-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 2px; }
 .login-links .linkish { font-size: 14px; font-weight: 600; color: var(--accent-ink, var(--accent)); }
+
+/* v4.2.1 mobile fixes */
+/* Home-screen app (iPhone): keep the status bar area (clock, battery) solid, content no longer scrolls underneath */
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top);background:var(--bg);z-index:40;pointer-events:none}
+.two-btn .btn{min-width:0;white-space:normal;text-align:center;line-height:1.2}
+@media (max-width:370px){
+  .mobile .topbar .wordmark{font-size:15px}
+  .mobile .topbar .seg button{padding:5px 7px;font-size:11px}
+  .mobile .topbar .brand-mark{display:none}
+  .mobile .topbar{gap:8px}
+  .two-btn{grid-template-columns:1fr}
+}
