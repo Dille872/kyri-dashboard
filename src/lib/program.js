@@ -149,8 +149,14 @@ export function historyByExercise(logs = []) {
 }
 export const exKey = (name) => String(name || '').trim().toLowerCase()
 
-// YouTube link → embed URL (or null for search links / other sites)
-export function youtubeEmbed(url) {
-  const m = String(url || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/))([\w-]{11})/)
-  return m ? `https://www.youtube-nocookie.com/embed/${m[1]}` : null
+// YouTube link → video id (watch?v=, youtu.be/, shorts/, embed/; null for search links / other sites)
+export function youtubeId(url) {
+  const m = String(url || '').match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/))([\w-]{11})/)
+  return m ? m[1] : null
 }
+// Plays inside the app: privacy mode, no related videos from other channels, inline on iPhone
+export function youtubeEmbed(url, autoplay = false) {
+  const id = youtubeId(url)
+  return id ? `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1${autoplay ? '&autoplay=1' : ''}` : null
+}
+export const youtubeThumb = (url) => { const id = youtubeId(url); return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null }

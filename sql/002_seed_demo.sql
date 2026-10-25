@@ -272,16 +272,18 @@ begin
 
   -- ---------- Exercise library: notes + videos, reused in every program ----------
   insert into exercise_library (trainer_id, name, note, video_type, video_url) values
-    (t, 'Deadlift',             'Brace hard, bar close to the shins, push the floor away.', 'yt', 'https://www.youtube.com/results?search_query=conventional+deadlift+technique'),
-    (t, 'DB Shoulder Press',    'Ribs down, don''t lean back.', null, null),
-    (t, 'Step Up + Knee Drive', null, 'yt', 'https://www.youtube.com/results?search_query=step+up+knee+drive+technique'),
-    (t, 'KB Swing',             'Hips, not arms. Snap at the top.', 'yt', 'https://www.youtube.com/results?search_query=kettlebell+swing+technique'),
+    (t, 'Deadlift',             'Brace hard, bar close to the shins, push the floor away.', null, null),
+    (t, 'DB Shoulder Press',    'Ribs down, don''t lean back.', 'yt', 'https://www.youtube.com/watch?v=0JfYxMRsUCQ'),
+    (t, 'DB Bench Press',       'Slow on the way down, shoulder blades together.', 'yt', 'https://www.youtube.com/watch?v=5Y3VZsLb1Ys'),
+    (t, '1-Arm DB Row',         'Pull the elbow to the hip, no twisting.', 'yt', 'https://www.youtube.com/watch?v=ZRSGpBUVcNw'),
+    (t, 'KB Swing',             'Hips, not arms. Snap at the top.', 'yt', 'https://www.youtube.com/watch?v=v3wnrSluDcw'),
     (t, 'Smith Squat',          'Feet slightly in front of the bar, sit straight down.', null, null),
-    (t, 'Goblet Squat',         'Elbows inside the knees, chest up.', 'yt', 'https://www.youtube.com/results?search_query=goblet+squat+technique'),
+    (t, 'Goblet Squat',         'Elbows inside the knees, chest up.', 'yt', 'https://www.youtube.com/watch?v=JO7D6GJ98wY'),
     (t, 'Back squat',           'Knees out, full depth only if the back stays neutral.', null, null),
-    (t, 'Romanian deadlift',    'Soft knees, push the hips back, bar slides down the thighs.', 'yt', 'https://www.youtube.com/results?search_query=romanian+deadlift+technique'),
+    (t, 'Romanian deadlift',    'Soft knees, push the hips back, bar slides down the thighs.', null, null),
     (t, 'Walking lunges',       'Long step, back knee kisses the floor.', null, null),
-    (t, 'Push Ups',             'Body in one line, chest to the floor.', null, null);
+    (t, 'Push Ups',             'Body in one line, chest to the floor.', null, null),
+    (t, 'Kettlebell Hammer Curl', 'Elbows stay at your sides, no swinging.', 'yt', 'https://www.youtube.com/watch?v=VRDZde-aCOo');
 
   -- ---------- Programs ----------
   -- Marios: exactly Kyri's notes (paste import)
@@ -342,6 +344,7 @@ begin
       {"type":"superset","rounds":3,"items":[{"exercise":"Walking lunges","rx":"×12"},{"exercise":"KB Swing","rx":"×15"}]},
       {"type":"finisher","rounds":5,"lines":["Assault Bike — 30 sec","Rest — 30 sec"]}]},
     {"title":"Day 2","focus":"Upper body","note":"Slow on the way down (3 sec) on every press.","blocks":[
+      {"type":"single","items":[{"exercise":"Kettlebell Hammer Curl","rx":"3×12"}]},
       {"type":"single","items":[{"exercise":"DB Bench Press","rx":"4×8–10"}]},
       {"type":"single","items":[{"exercise":"1-Arm DB Row","rx":"3×10/side"}]},
       {"type":"single","items":[{"exercise":"DB Shoulder Press","rx":"3×10"}]},

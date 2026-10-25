@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play, Upload, Trash2 } from 'lucide-react'
 import { supabase } from '../supabase.js'
 import { useI18n } from '../i18n.jsx'
 import { Modal, useRun, useToast } from './ui.jsx'
-import { exKey, youtubeEmbed } from '../lib/program.js'
+import { exKey, youtubeEmbed, youtubeThumb } from '../lib/program.js'
 
 // Exercise library: one note + video per exercise name, reused in every program.
 export function useLibrary(trainerId) {
@@ -29,24 +29,37 @@ export function MediaLine({ entry, onEdit }) {
   )
 }
 
-// The client-facing "How to" block: note + playable video
-export function HowTo({ note, videoType, videoUrl }) {
+// Video right inside the exercise: preview image + big play button; tapping plays it here, never leaves the app.
+// YouTube (privacy mode) now, own uploaded videos later.
+export function VideoPlayer({ videoType, videoUrl, title }) {
   const { t } = useI18n()
-  const [open, setOpen] = useState(false)
-  if (!note && !videoUrl) return null
-  const embed = videoType === 'yt' ? youtubeEmbed(videoUrl) : null
-  return (
-    <div className="howto">
-      {note && <div className="howto-note">{note}</div>}
-      {videoUrl && (videoType === 'file'
-        ? (open ? <video src={videoUrl} controls playsInline controlsList="nodownload" disablePictureInPicture onContextMenu={(e) => e.preventDefault()} />
-          : <button type="button" className="chip" onClick={() => setOpen(true)}><Play size={12} style={{ verticalAlign: '-2px' }} /> {t('media.howTo')}</button>)
-        : embed
-          ? (open ? <iframe src={embed} title={t('media.howTo')} allow="encrypted-media; picture-in-picture" allowFullScreen />
-            : <button type="button" className="chip" onClick={() => setOpen(true)}><Play size={12} style={{ verticalAlign: '-2px' }} /> {t('media.howTo')}</button>)
-          : <a className="chip" href={videoUrl} target="_blank" rel="noopener noreferrer"><Play size={12} style={{ verticalAlign: '-2px' }} /> {t('media.howTo')}</a>)}
+  const [playing, setPlaying] = useState(false)
+  const ref = useRef()
+  useEffect(() => setPlaying(false), [videoUrl])
+  if (!videoUrl) return null
+  if (videoType === 'file') return (
+    <div className="vplayer">
+      <video ref={ref} src={`${videoUrl}#t=0.1`} preload="metadata" playsInline controls={playing} controlsList="nodownload noplaybackrate" disablePictureInPicture
+        onContextMenu={(e) => e.preventDefault()} onPause={() => {}} onEnded={() => setPlaying(false)} />
+      {!playing && <button type="button" className="vplay" aria-label={`${t('media.howTo')}: ${title || ''}`} onClick={() => { setPlaying(true); ref.current?.play() }}><span className="vplay-btn" aria-hidden="true" /></button>}
     </div>
   )
+  const embed = youtubeEmbed(videoUrl, true)
+  if (!embed) return null   // not a playable link (e.g. a search page) → show nothing rather than send the client away
+  return (
+    <div className="vplayer">
+      {playing
+        ? <iframe src={embed} title={title || t('media.howTo')} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen />
+        : <button type="button" className="vplay" aria-label={`${t('media.howTo')}: ${title || ''}`} onClick={() => setPlaying(true)}
+            style={{ backgroundImage: `url(${youtubeThumb(videoUrl)})` }}><span className="vplay-btn" aria-hidden="true" /></button>}
+    </div>
+  )
+}
+
+// Kyri's note for the exercise, one line under the name
+export function HowTo({ note }) {
+  if (!note) return null
+  return <div className="howto-note">{note}</div>
 }
 
 export function MediaModal({ name, entry, trainerId, onClose, onSaved }) {
@@ -109,7 +122,7 @@ export function MediaModal({ name, entry, trainerId, onClose, onSaved }) {
                   <small style={{ fontWeight: 500 }}>{t('media.fileHelp')}</small>
                 </>}
             {entry?.video_url && <div className="acts" style={{ justifyContent: 'flex-start' }}>
-              <HowTo videoType={entry.video_type} videoUrl={entry.video_url} />
+              <div style={{ width: '100%' }}><VideoPlayer videoType={entry.video_type} videoUrl={entry.video_url} title={name} /></div>
               <button type="button" className="chip" onClick={removeVideo}><Trash2 size={12} style={{ verticalAlign: '-2px' }} /> {t('media.remove')}</button></div>}
           </div>
           <div className="meta">{t('media.help')}</div>

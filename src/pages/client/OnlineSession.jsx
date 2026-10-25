@@ -3,7 +3,7 @@ import { Check, ChevronLeft, ChevronRight, Pause, Play, Timer, X, Send, Dumbbell
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { Spinner, useRun } from '../../components/ui.jsx'
-import { HowTo } from '../../components/ExerciseMedia.jsx'
+import { HowTo, VideoPlayer } from '../../components/ExerciseMedia.jsx'
 import { fmtKg, repsOf, secondsOf, setsOf } from '../../lib/program.js'
 import { fmtDate, ymd } from '../../lib/format.js'
 
@@ -230,9 +230,10 @@ export default function OnlineSession({ client, trainer, prep, onExit, onSent })
           {cur.type === 'superset' && <div className="lab">{t('prog.superset', { n: cur.rounds || 3 })}</div>}
           {cur.items.map((it, idx) => (
             <div key={idx} className="step-ex">
+              <VideoPlayer videoType={it.video_type} videoUrl={it.video_url} title={it.exercise} />
               <div className="step-name">{it.exercise} <span className="rx">{it.rx}</span></div>
               {it.last_kg != null && <div className="meta">{t('online.lastKg', { kg: fmtKg(it.last_kg) })}</div>}
-              <HowTo note={it.note} videoType={it.video_type} videoUrl={it.video_url} />
+              <HowTo note={it.note} />
               <ExNote value={entry(`note${idx}`).text} onChange={(v) => set(`note${idx}`, { text: v })} id={`exn-${s.step}-${idx}`} />
             </div>
           ))}

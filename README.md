@@ -1,4 +1,4 @@
-# Train with Kyri – Coach Dashboard (v3.1.0)
+# Train with Kyri – Coach Dashboard (v3.2.0)
 
 Web-App für Trainer und Klienten: Kalender, Klienten mit Paketen, Zahlungen (Revolut, Überweisung, Bar) und eine Client-App für das Handy. Sprachen: Englisch, Griechisch, Deutsch.
 
@@ -80,6 +80,7 @@ Das Logo liegt unter `public/logo.png` (und die App-Icons daneben). Wenn du die 
 - **Programmtag im Kalender:** Kyri weist jeden Tag selbst einem Termin zu, im Termin („Programmtag“) oder im Programm („Einem Termin zuweisen“). Der Tag hängt am Termin: Termin verschieben = Tag wandert mit. Steht im Kalender und auf der Übersicht, beim Eintragen ist er vorausgewählt. Online-Kunden bekommen den Tag ihres heutigen Termins, sonst den nächsten in der Reihe.
 - **kg-Verlauf:** Unter jeder Übung „60 · 70 · 80 · 90“. Wächst mit jedem Log (Kyri im Gym oder der Kunde online).
 - **Eintragen im Gym:** ✓ auf der Übersicht (oder Name antippen) öffnet das Log: Tag wählen (nächster in der Reihenfolge ist vorausgewählt), nur geänderte kg eintragen, leer = wie letztes Mal. Der Haken bleibt manuell.
+- **Video direkt in der Übung (v3.2):** In der Online-Einheit steht das Video oben in der Übung, mit Vorschaubild und Play-Knopf; es läuft in der App (YouTube im Datenschutz-Modus oder eigenes Video). Braucht echte Video-Links (youtube.com/watch?v=… oder youtu.be/…), keine Suchlinks.
 - **Hinweis + Video pro Übung:** einmal gespeichert, in allen Programmen genutzt. YouTube-Link oder eigenes Video (Supabase Storage, `008_storage.sql`).
 - **Online-Kunden:** sehen vorher nur, was sie brauchen (Geräte, Dauer, Kyris Hinweis). „Einheit starten“ zeigt eine Übung nach der anderen, kg/Wdh. pro Satz, Pausen- und Intervall-Timer, Wasserzeichen mit Name. Am Ende Notiz → „An Kyri senden“ → erscheint in der Übersicht und im kg-Verlauf.
 - **Kommentar pro Übung + Stoppuhr (v3.1):** In der Online-Einheit läuft oben die Gesamtzeit mit; bei jeder Übung kann der Kunde einen Kommentar schreiben. Kyri sieht beides auf der Übersicht und im Profil, mit „geplant ~X Min.“ daneben (orange, wenn mehr als 25 % daneben).
