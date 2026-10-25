@@ -14,6 +14,18 @@ const MAX_TEXTS = 40, MAX_CHARS = 1500, DAILY_LIMIT = 3000
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
 
+// Server key: legacy service_role key, or the new secret key (projects with the new API keys)
+function serviceKey(): string {
+  const legacy = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (legacy) return legacy
+  try {
+    const keys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}')
+    const first = typeof keys === 'string' ? keys : keys.default || Object.values(keys)[0]
+    if (first) return String(first)
+  } catch { /* fall through */ }
+  return Deno.env.get('SUPABASE_SECRET_KEY') || ''
+}
+
 async function sha(text: string) {
   const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
   return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join('')
@@ -25,7 +37,7 @@ Deno.serve(async (req) => {
 
   const key = Deno.env.get('DEEPL_API_KEY')
   if (!key) return json({ error: 'DEEPL_API_KEY missing' }, 500)
-  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey(), { auth: { persistSession: false } })
 
   // signed-in users only (trainer or client)
   const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')
