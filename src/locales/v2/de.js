@@ -107,4 +107,5 @@ export default {
     rounds: '{n} Runden', interval: 'Intervall', work: 'Los', go: 'Los!',
     equipment: { smith: 'Smith-Maschine', barbell: 'Langhantel', dumbbells: 'Kurzhanteln', kettlebell: 'Kettlebell', sled: 'Schlitten', rower: 'Rudergerät', bike: 'Assault Bike', ball: 'Medizinball', trx: 'TRX', box: 'Box / Bank' },
   },
+  tr: { title: "Übersetzung", help: "Deine Texte (Regeln, PAR-Q, Datenschutz, Übungshinweise, Paketnamen, Tageshinweise) werden automatisch in die Sprache jedes Kunden übersetzt. Übungsnamen bleiben, wie du sie schreibst.", comments: "Kundenkommentare für mich übersetzen", commentsHelp: "Übungskommentare, Session-Notizen und PAR-Q-Erklärungen erscheinen in deiner Sprache, das Original ist einen Tipp entfernt. Sie können Gesundheitsangaben enthalten – nur mit einem bezahlten DeepL-Tarif einschalten (dort werden Texte nicht gespeichert).", showOriginal: "Original", showTranslation: "Übersetzung" },
 }

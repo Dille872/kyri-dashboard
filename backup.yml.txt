@@ -1,0 +1,39 @@
+# Weekly encrypted backup of Kyri's live database (Sundays 03:00 UTC, or by hand: Actions → Backup → Run workflow).
+# Needs two repository secrets (GitHub → Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL     the live project's connection string (Supabase → Connect → "Session pooler" URI, with the DB password)
+#   BACKUP_PASSPHRASE   a long password; the backup can only be opened with it
+# The file is kept 90 days under Actions → Backup → the run → Artifacts.
+# Restore into a fresh project (after running the sql/ files): gpg -d backup.sql.gz.gpg | gunzip | psql "<db url>"
+# Logins re-link by e-mail on the next sign-in, so auth users are not part of the backup.
+name: Backup
+on:
+  schedule: [{ cron: '0 3 * * 0' }]
+  workflow_dispatch:
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      DB: ${{ secrets.SUPABASE_DB_URL }}
+      PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Skip when not set up
+        if: env.DB == '' || env.PASS == ''
+        run: echo "Backup secrets missing, nothing to do." 
+      - name: Install pg_dump 17
+        if: env.DB != '' && env.PASS != ''
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+      - name: Dump and encrypt
+        if: env.DB != '' && env.PASS != ''
+        run: |
+          /usr/lib/postgresql/17/bin/pg_dump "$DB" --schema=public --data-only --no-owner --no-privileges \
+            | gzip | gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$PASS" -o backup.sql.gz.gpg
+          ls -la backup.sql.gz.gpg
+      - uses: actions/upload-artifact@v4
+        if: env.DB != '' && env.PASS != ''
+        with:
+          name: kyri-backup-${{ github.run_number }}
+          path: backup.sql.gz.gpg
+          retention-days: 90

@@ -1,4 +1,4 @@
-# Train with Kyri – Coach Dashboard (v4.0.0)
+# Train with Kyri – Coach Dashboard (v4.1.0)
 
 Web-App für Trainer und Klienten: Kalender, Klienten mit Paketen, Zahlungen (Revolut, Überweisung, Bar) und eine Client-App für das Handy. Sprachen: Englisch, Griechisch, Deutsch.
 
@@ -110,6 +110,8 @@ sql/010_russian.sql     v2.2.0: Russisch als 4. Sprache
 sql/011_client_stats.sql v3.0.0: Zahlen für die Kunden-Startseite (Woche, Monat, Anwesenheit)
 sql/012_session_comments.sql v3.1.0: Kommentar pro Übung, echte vs. geplante Dauer
 sql/013_privacy.sql     v4.0.0: Datenschutz, Einwilligung beim PAR-Q, Kontakt-E-Mail
+sql/014_translations.sql v4.1.0: automatische Übersetzung (Cache + Schalter)
+supabase/functions/translate/index.ts  v4.1.0: Server-Funktion für DeepL
 sql/LIVE_SETUP.sql      Kyris echtes System anlegen (statt Seed)
 supabase/email-magic-link.html  Login-Mail im Kyri-Look
 .github/workflows/backup.yml    wöchentliche verschlüsselte Sicherung
@@ -135,3 +137,17 @@ src/pages/client/       Client-App
 7. **Kyri:** meldet sich mit `trainwithkyri1@outlook.com` an (Link per Mail) → Einstellungen: Bankdaten, Revolut, WhatsApp, Pakete, Regeln, Datenschutz-E-Mail → Klienten anlegen → „Einladung kopieren“ per WhatsApp an die Kunden → Programme aus den Notizen einfügen.
 
 Beide Systeme laufen aus demselben Code: Jeder `git push` aktualisiert Demo und Live gleichzeitig. Die Daten sind komplett getrennt.
+
+## Automatische Übersetzung (v4.1.0)
+
+Kyris Texte (Regeln, PAR-Q-Fragen, Datenschutztext, Übungshinweise, Paketnamen, Tagestitel/-hinweise) erscheinen für jeden Kunden in seiner Sprache.
+Optional (Einstellungen → Übersetzung): Kundenkommentare und PAR-Q-Erklärungen für Kyri übersetzen – nur mit bezahltem DeepL-Tarif einschalten.
+Jeder Text wird pro Sprache nur einmal bei DeepL übersetzt und in `tr_cache` gespeichert (nur ein Fingerabdruck des Originals, nicht das Original).
+Ohne DeepL-Schlüssel zeigt die App einfach die Originaltexte.
+
+Einrichtung:
+1. DeepL-API-Konto anlegen (deepl.com/pro-api, „DeepL API Free“) und den Authentifizierungsschlüssel kopieren.
+2. Supabase → SQL Editor: `sql/014_translations.sql` ausführen.
+3. Supabase → Edge Functions → Secrets: `DEEPL_API_KEY` = Schlüssel.
+4. Supabase → Edge Functions → Deploy a new function → Via Editor, Name `translate`, Inhalt von `supabase/functions/translate/index.ts` einfügen, Deploy.
+   In den Einstellungen der Funktion „Verify JWT with legacy secret“ ausschalten (die Funktion prüft den Login selbst).

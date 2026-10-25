@@ -4,6 +4,7 @@ import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { Modal, useRun } from '../../components/ui.jsx'
 import PrivacyText from '../../components/Privacy.jsx'
+import { Tx } from '../../lib/translate.jsx'
 
 // First sign-in: 1. PAR-Q health questions (Kyri's own list), 2. Kyri's rules. The app opens after both.
 export function ParqScreen({ client, trainer, top, onDone }) {
@@ -38,7 +39,7 @@ export function ParqScreen({ client, trainer, top, onDone }) {
       <div className="card">
         {qs.map((q, i) => (
           <div className="q" key={i}>
-            <div id={`pq-${i}`} className="q-text">{i + 1}. {q.q}</div>
+            <div id={`pq-${i}`} className="q-text">{i + 1}. <Tx text={q.q} /></div>
             {q.type === 'yn' ? (
               <div className="yn" role="group" aria-labelledby={`pq-${i}`}>
                 <button type="button" className="y" aria-pressed={ans[i] === true} onClick={() => setAns({ ...ans, [i]: true })}>{t('common.yes')}</button>
@@ -84,7 +85,7 @@ export function RulesScreen({ client, trainer, top, onDone }) {
       {top}
       <div className="steps" aria-label={t('onboard.step', { n: 2 })}><i className="on" /><i className="on" /></div>
       <div><div className="hello">{t('onboard.rulesTitle', { trainer: tr })}</div><p className="meta" style={{ margin: '6px 0 0' }}>{t('onboard.rulesSub')}</p></div>
-      <div className="card rules-text">{trainer.rules_text}</div>
+      <div className="card rules-text"><Tx text={trainer.rules_text} /></div>
       <label className="check-row" htmlFor="r-ok"><input id="r-ok" type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} />{t('onboard.accept')}</label>
       <button className="btn block" disabled={!ok || busy} onClick={accept}><ScrollText />{t('onboard.start')}</button>
     </div>

@@ -11,6 +11,7 @@ import { ParqScreen, RulesScreen } from './Onboarding.jsx'
 import OnlineSession, { TodayCard } from './OnlineSession.jsx'
 import { MethodTag } from '../admin/Payments.jsx'
 import PrivacyText from '../../components/Privacy.jsx'
+import { Tx } from '../../lib/translate.jsx'
 
 export default function ClientApp({ clientId, trainerId, signOut }) {
   const { t, locale, lang, setLang } = useI18n()
@@ -337,7 +338,7 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
       <Modal open={rulesOpen} title={t('onboard.myRules')} onClose={() => setRulesOpen(false)}>
         {rulesOpen && (
           <div className="form">
-            <div className="rules-text">{trainer.rules_text}</div>
+            <div className="rules-text"><Tx text={trainer.rules_text} /></div>
             {client.rules_accepted_at && <div className="meta">{t('onboard.acceptedOn', { date: fmtDate(ymd(new Date(client.rules_accepted_at)), locale, { day: 'numeric', month: 'long', year: 'numeric' }) })}</div>}
           </div>
         )}
@@ -378,7 +379,7 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
             <div className="grid" style={{ gap: 8 }}>
               {packages.map((p) => (
                 <button key={p.id} className="choice" aria-pressed={pickPkg === p.id} onClick={() => setPickPkg(p.id)}>
-                  <span><b>{p.name}</b><span className="meta" style={{ display: 'block' }}>{p.sessions ? `${p.sessions} ${t('common.sessions')} · ` : ''}{t(`billing.${p.billing}`)}</span></span>
+                  <span><b><Tx text={p.name} /></b><span className="meta" style={{ display: 'block' }}>{p.sessions ? `${p.sessions} ${t('common.sessions')} · ` : ''}{t(`billing.${p.billing}`)}</span></span>
                   <span className="num">{money(p.price, locale)}</span>
                 </button>
               ))}

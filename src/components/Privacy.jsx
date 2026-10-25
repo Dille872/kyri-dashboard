@@ -1,11 +1,13 @@
 import { useI18n } from '../i18n.jsx'
+import { useTr } from '../lib/translate.jsx'
 
 // Privacy notice: the trainer's own text, or the app's standard text with his name and contact e-mail.
 // Paragraphs are separated by an empty line; the first line of each paragraph is its heading.
 export default function PrivacyText({ trainer }) {
   const { t } = useI18n()
   const owner = trainer?.owner_name || trainer?.brand_name || ''
-  const text = trainer?.privacy_text?.trim()
+  const own = useTr(trainer?.privacy_text?.trim() || '').text
+  const text = own
     || t('privacy.text', { owner, brand: trainer?.brand_name || '', email: trainer?.contact_email || '—' })
   return (
     <div className="privacy-text">

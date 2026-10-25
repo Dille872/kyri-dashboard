@@ -15,6 +15,7 @@ export default function Settings({ data, reload, trainerId }) {
   const [pkgs, setPkgs] = useState(data.packages)
   useEffect(() => setPkgs(data.packages), [data.packages])
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
+  const [trc, setTrc] = useState(!!data.trainer.translate_comments)
 
   async function saveTrainer(e) {
     e.preventDefault()
@@ -22,6 +23,7 @@ export default function Settings({ data, reload, trainerId }) {
     row.brand_name = row.brand_name || data.trainer.brand_name
     row.default_lang = row.default_lang || 'en'
     if (row.cancel_hours == null) row.cancel_hours = 24
+    row.translate_comments = trc
     row.reminder_days = Math.min(Math.max(row.reminder_days ?? 2, 1), 14)
     const r = await run(supabase.from('trainers').update(row).eq('id', trainerId))
     if (r.ok) { toast(t('common.saved')); reload() }
@@ -73,6 +75,10 @@ export default function Settings({ data, reload, trainerId }) {
           <h2 style={{ marginTop: 10 }}>{t('privacy.title')}</h2>
           <label className="f" htmlFor="t-pmail">{t('privacy.contactEmail')}<input id="t-pmail" type="email" value={f.contact_email} onChange={set('contact_email')} placeholder="you@example.com" /></label>
           <label className="f" htmlFor="t-ptext">{t('privacy.privacyText')}<textarea id="t-ptext" rows={4} value={f.privacy_text} onChange={set('privacy_text')} /><small>{t('privacy.privacyHelp')}</small></label>
+          <h2 style={{ marginTop: 10 }}>{t('tr.title')}</h2>
+          <div className="meta" style={{ marginTop: -8 }}>{t('tr.help')}</div>
+          <label className="check-row" htmlFor="t-trc" style={{ alignItems: 'flex-start' }}><input id="t-trc" type="checkbox" checked={trc} onChange={(e) => setTrc(e.target.checked)} style={{ marginTop: 2 }} />
+            <span><span style={{ fontWeight: 500 }}>{t('tr.comments')}</span><small className="meta" style={{ display: 'block' }}>{t('tr.commentsHelp')}</small></span></label>
           <h2 style={{ marginTop: 10 }}>{t('settings.reminder')}</h2>
           <label className="f" htmlFor="t-remind">{t('settings.reminderDays')}<input id="t-remind" type="number" min="1" max="14" value={f.reminder_days} onChange={set('reminder_days')} style={{ maxWidth: 120 }} /><small>{t('settings.reminderHelp')}</small></label>
           <div className="modal-foot"><button className="btn">{t('common.save')}</button></div>

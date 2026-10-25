@@ -108,4 +108,5 @@ export default {
     rounds: '{n} rounds', interval: 'Interval', work: 'Go', go: 'Go!',
     equipment: { smith: 'Smith machine', barbell: 'Barbell', dumbbells: 'Dumbbells', kettlebell: 'Kettlebell', sled: 'Sled', rower: 'Rower', bike: 'Assault bike', ball: 'Medicine ball', trx: 'TRX', box: 'Box / bench' },
   },
+  tr: { title: "Translation", help: "Your texts (rules, PAR-Q, privacy notice, exercise notes, package names, day notes) are translated automatically into each client’s language. Exercise names stay as you write them.", comments: "Also translate client comments for me", commentsHelp: "Exercise comments, session notes and PAR-Q explanations appear in your language, with the original one tap away. They may contain health details – only turn this on with a paid DeepL plan (texts are not stored there).", showOriginal: "Original", showTranslation: "Translation" },
 }

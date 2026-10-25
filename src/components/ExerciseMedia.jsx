@@ -4,6 +4,7 @@ import { supabase } from '../supabase.js'
 import { useI18n } from '../i18n.jsx'
 import { Modal, useRun, useToast } from './ui.jsx'
 import { exKey, youtubeEmbed, youtubeThumb } from '../lib/program.js'
+import { Tx } from '../lib/translate.jsx'
 
 // Exercise library: one note + video per exercise name, reused in every program.
 export function useLibrary(trainerId) {
@@ -59,7 +60,7 @@ export function VideoPlayer({ videoType, videoUrl, title }) {
 // Kyri's note for the exercise, one line under the name
 export function HowTo({ note }) {
   if (!note) return null
-  return <div className="howto-note">{note}</div>
+  return <div className="howto-note"><Tx text={note} /></div>
 }
 
 export function MediaModal({ name, entry, trainerId, onClose, onSaved }) {

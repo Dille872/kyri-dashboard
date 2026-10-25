@@ -9,9 +9,11 @@ import { packStatuses } from '../../lib/pack.js'
 import { useProgramDays } from '../../lib/useProgramDays.js'
 import { fmtKg } from '../../lib/program.js'
 import { addDays, daysBetween, fmtDate, fmtRelative, hm, money, mondayOf, payState, toIso, ymd } from '../../lib/format.js'
+import { Tx } from '../../lib/translate.jsx'
 
 export default function Overview({ data, reload, go, trainerId }) {
   const { t, locale } = useI18n()
+  const trOn = !!data.trainer?.translate_comments
   const run = useRun()
   const toast = useToast()
   const [sessions, setSessions] = useState([])
@@ -200,7 +202,7 @@ export default function Overview({ data, reload, go, trainerId }) {
                 {parqNew.map((r) => (
                   <div className="row" key={r.id}>
                     <div style={{ minWidth: 0 }}><div className="name"><AlertTriangle size={14} style={{ verticalAlign: '-2px', color: 'var(--bad)' }} /> {byId[r.client_id]?.name}</div>
-                      <div className="meta">{t('overview.parqYes', { n: r.answers.filter((a) => a.type === 'yn' && a.answer === true).length })}{r.explanation ? ` · ${r.explanation}` : ''}</div></div>
+                      <div className="meta">{t('overview.parqYes', { n: r.answers.filter((a) => a.type === 'yn' && a.answer === true).length })}{r.explanation ? <> · <Tx text={r.explanation} on={trOn} orig /></> : ''}</div></div>
                     <button className="chip solid" onClick={() => go('clients', { profile: r.client_id })}>{t('common.open')}</button>
                   </div>
                 ))}
@@ -215,8 +217,8 @@ export default function Overview({ data, reload, go, trainerId }) {
                 <div style={{ minWidth: 0 }}>
                   <button className="name linkish" onClick={() => go('clients', { profile: w.client_id })}>{t('overview.finished', { name: byId[w.client_id]?.name || '', day: w.day_title || '' })}</button>
                   <div className="meta">{fmtRelative(w.finished_at, locale)} · <Duration w={w} />{w.exercise_logs?.length ? ` · ${w.exercise_logs.filter((x) => x.kg != null).slice(0, 3).map((x) => `${x.exercise} ${fmtKg(x.kg)} kg`).join(' · ')}` : ''}</div>
-                  {w.note && <div className="feed-note">“{w.note}”</div>}
-                  {w.exercise_logs?.filter((x) => x.note).map((x, i) => <div key={i} className="ex-comment"><b>{x.exercise}:</b> {x.note}</div>)}
+                  {w.note && <div className="feed-note">“<Tx text={w.note} on={trOn} orig />”</div>}
+                  {w.exercise_logs?.filter((x) => x.note).map((x, i) => <div key={i} className="ex-comment"><b>{x.exercise}:</b> <Tx text={x.note} on={trOn} orig /></div>)}
                 </div>
                 <span className="pill ok">{t('common.done')}</span>
               </div>

@@ -6,6 +6,7 @@ import { Spinner, useRun } from '../../components/ui.jsx'
 import { HowTo, VideoPlayer } from '../../components/ExerciseMedia.jsx'
 import { fmtKg, repsOf, secondsOf, setsOf } from '../../lib/program.js'
 import { fmtDate, ymd } from '../../lib/format.js'
+import { Tx } from '../../lib/translate.jsx'
 
 const REST_SINGLE = 90, REST_SUPERSET = 60
 export const estMinutes = (steps) => Math.max(15, Math.round((steps * 7 + 10) / 5) * 5)
@@ -19,8 +20,8 @@ export function TodayCard({ prep, trainer, onStart }) {
   return (
     <div className="card today-card">
       <div className="hero-band" aria-hidden="true"><img src={trainer.logo_url || '/logo.png'} alt="" /></div>
-      <div className="lab">{t('online.today')} · {prep.title}</div>
-      <div className="hero-title">{prep.focus || prep.title}</div>
+      <div className="lab">{t('online.today')} · <Tx text={prep.title} /></div>
+      <div className="hero-title"><Tx text={prep.focus || prep.title} /></div>
       <div className="acts" style={{ justifyContent: 'flex-start', marginTop: 8 }}>
         <span className="tag">{t('online.duration', { n: estMinutes(prep.steps) })}</span>
         <span className="tag">{t('online.steps', { n: prep.steps })}</span>
@@ -30,7 +31,7 @@ export function TodayCard({ prep, trainer, onStart }) {
         {prep.equipment?.length ? prep.equipment.map((k) => <span key={k} className="chip-static"><Dumbbell size={13} />{t(`online.equipment.${k}`)}</span>)
           : <span className="meta">{t('online.bodyweight')}</span>}
       </div>
-      {prep.note && <div className="from-trainer"><b>{t('online.fromTrainer', { trainer: tr })}</b>{prep.note}</div>}
+      {prep.note && <div className="from-trainer"><b>{t('online.fromTrainer', { trainer: tr })}</b><Tx text={prep.note} /></div>}
       {prep.done_today ? (
         <>
           <div className="prog-cheer" style={{ marginTop: 14 }}><Check size={15} style={{ verticalAlign: '-3px' }} /> {t('online.doneToday')} · {t('online.doneTodayBody', { trainer: tr })}</div>

@@ -9,10 +9,12 @@ import ProgramLog from '../../components/ProgramLog.jsx'
 import { packStatus } from '../../lib/pack.js'
 import { fmtKg } from '../../lib/program.js'
 import { fmtDate, hm, money, payState, sessionsLeft, ymd } from '../../lib/format.js'
+import { Tx } from '../../lib/translate.jsx'
 
 // Everything about one client: health & rules, pack, program, progress, upcoming and history.
 export default function ClientProfile({ client, data, trainerId, onBack, onEdit, onInvite, onArchive, go, reload }) {
   const { t, locale } = useI18n()
+  const trOn = !!data.trainer?.translate_comments
   const run = useRun()
   const toast = useToast()
   const [d, setD] = useState(null)
@@ -95,7 +97,7 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
             <div className="row">
               <div style={{ minWidth: 0 }}><div className="name">{t('profile.parq')}</div>
                 <div className="meta">{!client.parq_at || !d.parq ? t('profile.parqMissing')
-                  : flagged ? <span style={{ color: 'var(--bad)' }}><AlertTriangle size={13} style={{ verticalAlign: '-2px' }} /> {t('overview.parqYes', { n: d.parq.answers.filter((a) => a.type === 'yn' && a.answer === true).length })}{d.parq.explanation ? ` · ${d.parq.explanation}` : ''}</span>
+                  : flagged ? <span style={{ color: 'var(--bad)' }}><AlertTriangle size={13} style={{ verticalAlign: '-2px' }} /> {t('overview.parqYes', { n: d.parq.answers.filter((a) => a.type === 'yn' && a.answer === true).length })}{d.parq.explanation ? <> · <Tx text={d.parq.explanation} on={trOn} /></> : ''}</span>
                     : t('profile.parqAllNo')}</div></div>
               {!client.parq_at || !d.parq ? <span className="pill mute">{t('profile.parqMissing')}</span>
                 : flagged && !d.parq.reviewed_at ? <span className="pill bad">{t('profile.parqCheck')}</span> : <span className="pill ok">{t('profile.parqOkPill')}</span>}
@@ -114,11 +116,11 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
                   return (
                     <div key={i} className={`qa ${bad ? 'bad' : ''}`}>
                       <div>{i + 1}. {a.q}</div>
-                      <b>{a.type === 'yn' ? (a.answer ? t('common.yes') : t('common.no')) : a.text || '—'}</b>
+                      <b>{a.type === 'yn' ? (a.answer ? t('common.yes') : t('common.no')) : (a.text ? <Tx text={a.text} on={trOn} orig /> : '—')}</b>
                     </div>
                   )
                 })}
-                {d.parq.explanation && <div className="qa bad"><div>{t('profile.explanation')}</div><b>{d.parq.explanation}</b></div>}
+                {d.parq.explanation && <div className="qa bad"><div>{t('profile.explanation')}</div><b><Tx text={d.parq.explanation} on={trOn} orig /></b></div>}
                 <div className="meta">{t('profile.signed', { name: d.parq.signed_name, date: fmtDate(ymd(new Date(d.parq.created_at)), locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}</div>
               </div>
             )}
@@ -177,8 +179,8 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
                   <span className="meta"> · <span className="fmt"><Video />{t('profile.onlineWorkout', { day: it.w.day_title || '' })}</span> · <Duration w={it.w} /></span></div>
                 <span className="pill ok">{t('common.done')}</span>
               </div>
-              {it.w.note && <div className="feed-note">“{it.w.note}”</div>}
-              {it.w.exercise_logs?.length > 0 && <ul>{it.w.exercise_logs.map((l, i) => <li key={i}>{l.exercise}{l.kg != null ? ` · ${fmtKg(l.kg)} kg` : ''}{l.reps ? ` × ${l.reps}` : ''}{l.note && <div className="ex-comment">“{l.note}”</div>}</li>)}</ul>}
+              {it.w.note && <div className="feed-note">“<Tx text={it.w.note} on={trOn} orig />”</div>}
+              {it.w.exercise_logs?.length > 0 && <ul>{it.w.exercise_logs.map((l, i) => <li key={i}>{l.exercise}{l.kg != null ? ` · ${fmtKg(l.kg)} kg` : ''}{l.reps ? ` × ${l.reps}` : ''}{l.note && <div className="ex-comment">“<Tx text={l.note} on={trOn} orig />”</div>}</li>)}</ul>}
             </div>
           ) : (
             <div key={it.s.id} className="log-item hist">
