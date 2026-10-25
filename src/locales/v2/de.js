@@ -39,6 +39,7 @@ export default {
     createProgram: 'Programm anlegen', reps: 'Wdh.', today: 'kg heute', online: 'Online-Kunden tragen ihre Einheiten selbst in der App ein.',
   },
   overview: {
+    planned: 'geplant ~{n}', exComments: 'Kommentare',
     online: 'Online-Kunden', finished: '{name} hat {day} gemacht', noOnline: 'Keine Online-Einheiten in den letzten 7 Tagen.',
     packEnds: 'Paket endet bald', lastOfPack: 'Letzte Einheit des Pakets: {when}', reminderOn: 'Erinnerung in der App',
     lastTag: 'Letzte vom Paket', packUsed: 'Paket aufgebraucht', fewLeft: 'noch {n} · nichts gebucht', newParq: 'Neuer PAR-Q', parqYes: '{n} × „Ja“',
@@ -86,6 +87,7 @@ export default {
     fewLeft: 'Nur noch {n} Einheiten in deinem Paket.', oneLeft: 'Nur noch 1 Einheit in deinem Paket.', used: 'Dein Paket ist aufgebraucht.',
   },
   online: {
+    exNote: 'Kommentar zur Übung', exNotePh: 'z. B. Schulter zwickt beim letzten Satz', total: 'Gesamtzeit', planned: 'geplant ~{n} Min.',
     today: 'Training heute', prepTitle: 'Mach dich bereit', duration: '~{n} Min.', steps: '{n} Übungen', need: 'Du brauchst',
     bodyweight: 'Nur dein Körpergewicht', fromTrainer: 'Von {trainer}', start: 'Einheit starten', doneToday: 'Heute erledigt',
     doneTodayBody: 'Stark! {trainer} hat deine Werte.', again: 'Weitere Einheit starten', week: 'Diese Woche',

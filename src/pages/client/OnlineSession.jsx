@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, ChevronLeft, ChevronRight, Pause, Play, Timer, X, Send, Dumbbell } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Pause, Play, Timer, X, Send, Dumbbell, MessageSquare, Clock } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { Spinner, useRun } from '../../components/ui.jsx'
@@ -71,6 +71,16 @@ export default function OnlineSession({ client, trainer, prep, onExit, onSent })
   useEffect(() => { loadStep(s.step); loadStep(s.step + 1) }, [s.step, loadStep])
   useEffect(() => { topRef.current?.scrollIntoView?.({ block: 'start' }); window.scrollTo(0, 0) }, [s.step, s.phase])
 
+  // stopwatch for the whole session (Start → Finish); it keeps running if the phone locks or the page reloads
+  useEffect(() => {
+    if (s.phase !== 'run') return
+    const h = setInterval(() => tick((n) => n + 1), 1000)
+    return () => clearInterval(h)
+  }, [s.phase])
+  const elapsed = Math.max(0, ((s.finishedAt || Date.now()) - s.startedAt) / 1000)
+  const hms = (sec) => { const x = Math.floor(sec), h = Math.floor(x / 3600), m = Math.floor((x % 3600) / 60), r = x % 60
+    return `${h ? `${h}:${String(m).padStart(2, '0')}` : m}:${String(r).padStart(2, '0')}` }
+
   // timers
   useEffect(() => {
     if (!rest && !iv?.running) return
@@ -111,21 +121,24 @@ export default function OnlineSession({ client, trainer, prep, onExit, onSent })
     for (const [i, st] of Object.entries(steps)) {
       const e = s.entries[i] || {}
       ;(st.items || []).forEach((it, idx) => {
+        const note = (e[`note${idx}`]?.text || '').trim()
         const mine = Object.entries(e).filter(([k]) => k.endsWith(`-${idx}`)).map(([, v]) => v).filter((v) => v.done || v.kg)
-        if (!mine.length) return
+        if (!mine.length) { if (note) out.push({ exercise: it.exercise, kg: '', reps: '', note }); return }
         const withKg = mine.map((v) => ({ ...v, n: Number(String(v.kg ?? '').replace(',', '.')) })).map((v) => ({ ...v, n: v.kg !== undefined && v.kg !== '' && !Number.isNaN(v.n) ? v.n : it.last_kg != null ? Number(it.last_kg) : null }))
         const best = withKg.reduce((a, b) => ((b.n ?? -1) > (a.n ?? -1) ? b : a), withKg[0])
-        out.push({ exercise: it.exercise, kg: best.n == null ? '' : String(best.n), reps: best.reps || '' })
+        out.push({ exercise: it.exercise, kg: best.n == null ? '' : String(best.n), reps: best.reps || '', note })
       })
+      if (st.type === 'finisher' && (e.note0?.text || '').trim()) out.push({ exercise: t('prog.finisher'), kg: '', reps: '', note: e.note0.text.trim() })
     }
     return out
   }
   const setsDone = Object.values(s.entries).reduce((a, e) => a + Object.entries(e).filter(([k, v]) => k !== 'fin' && v.done).length + (e.fin?.done ? e.fin.rounds : 0), 0)
-  const minutes = Math.max(1, Math.round((Date.now() - s.startedAt) / 60000))
+  const minutes = Math.max(1, Math.round(elapsed / 60))
+  const planned = estMinutes(prep.steps)
 
   async function send() {
     setBusy(true)
-    const r = await run(supabase.rpc('finish_workout', { p_client: client.id, p_day: prep.day_id, p_logs: collectLogs(), p_note: s.note, p_minutes: minutes }))
+    const r = await run(supabase.rpc('finish_workout', { p_client: client.id, p_day: prep.day_id, p_logs: collectLogs(), p_note: s.note, p_minutes: minutes, p_seconds: Math.round(elapsed), p_planned: planned }))
     setBusy(false)
     if (!r.ok) return
     try { sessionStorage.removeItem(KEY) } catch {}
@@ -155,16 +168,19 @@ export default function OnlineSession({ client, trainer, prep, onExit, onSent })
       <div className="circle ok-circle"><Check /></div>
       <div className="hello center">{t('online.summary', { name: client.name.split(' ')[0] })}</div>
       <p className="meta center" style={{ margin: 0 }}>{prep.title}{prep.focus ? ` · ${prep.focus}` : ''} · {t('online.summaryBody', { min: minutes, sets: setsDone })}</p>
+      <div className="total-time"><Clock size={16} /><b>{hms(elapsed)}</b><span className="meta">{t('online.planned', { n: planned })}</span></div>
       <div className="card">
         <div className="list">
-          {collectLogs().filter((l) => l.kg || l.reps).map((l, i) => (
-            <div className="row" key={i} style={{ padding: '8px 0' }}><span>{l.exercise}</span><span className="num">{l.kg ? `${fmtKg(l.kg)} kg` : ''}{l.reps ? ` × ${l.reps}` : ''}</span></div>
+          {collectLogs().map((l, i) => (
+            <div className="row" key={i} style={{ padding: '8px 0' }}>
+              <div style={{ minWidth: 0 }}><span>{l.exercise}</span>{l.note && <div className="feed-note">“{l.note}”</div>}</div>
+              <span className="num">{l.kg ? `${fmtKg(l.kg)} kg` : ''}{l.reps ? ` × ${l.reps}` : ''}</span></div>
           ))}
         </div>
       </div>
       <label className="f" htmlFor="ses-note">{t('online.noteTo', { trainer: tr })}<textarea id="ses-note" rows={3} placeholder={t('online.notePh')} value={s.note} onChange={(e) => setS({ ...s, note: e.target.value })} /></label>
       <button className="btn block" disabled={busy} onClick={send}><Send />{t('online.send', { trainer: tr })}</button>
-      <button className="btn block ghost" onClick={() => setS({ ...s, phase: 'run' })}><ChevronLeft />{t('online.back')}</button>
+      <button className="btn block ghost" onClick={() => setS({ ...s, phase: 'run', finishedAt: null })}><ChevronLeft />{t('online.back')}</button>
     </>
   )
 
@@ -175,7 +191,10 @@ export default function OnlineSession({ client, trainer, prep, onExit, onSent })
       <div className="ses-top">
         <div style={{ minWidth: 0 }}><div className="eyebrow">{prep.title}{prep.focus ? ` · ${prep.focus}` : ''}</div>
           <div className="ses-count">{t('online.step', { n: s.step + 1, total })}</div></div>
-        <button className="chip" onClick={() => setConfirmEnd(true)}><X size={13} style={{ verticalAlign: '-2px' }} /> {t('online.end')}</button>
+        <div className="acts" style={{ flexWrap: 'nowrap' }}>
+          <span className="stopwatch" role="timer" aria-label={t('online.total')}><Clock size={14} />{hms(elapsed)}</span>
+          <button className="chip" onClick={() => setConfirmEnd(true)}><X size={13} style={{ verticalAlign: '-2px' }} /> {t('online.end')}</button>
+        </div>
       </div>
       <div className="bar full"><i style={{ width: `${((s.step + 1) / total) * 100}%` }} /></div>
 
@@ -204,6 +223,7 @@ export default function OnlineSession({ client, trainer, prep, onExit, onSent })
           ) : (
             <button type="button" className="tick big-tick" aria-pressed={!!entry('fin').done} onClick={() => set('fin', { done: !entry('fin').done, rounds: cur.rounds || 1 })}><Check size={18} /></button>
           )}
+          <ExNote value={entry('note0').text} onChange={(v) => set('note0', { text: v })} id={`exn-${s.step}-fin`} />
         </div>
       ) : (
         <div className="card step-card">
@@ -213,6 +233,7 @@ export default function OnlineSession({ client, trainer, prep, onExit, onSent })
               <div className="step-name">{it.exercise} <span className="rx">{it.rx}</span></div>
               {it.last_kg != null && <div className="meta">{t('online.lastKg', { kg: fmtKg(it.last_kg) })}</div>}
               <HowTo note={it.note} videoType={it.video_type} videoUrl={it.video_url} />
+              <ExNote value={entry(`note${idx}`).text} onChange={(v) => set(`note${idx}`, { text: v })} id={`exn-${s.step}-${idx}`} />
             </div>
           ))}
           <div className="set-head" aria-hidden="true"><span /><span>{t('online.kg')}</span><span>{t('online.reps')}</span><span /></div>
@@ -240,7 +261,7 @@ export default function OnlineSession({ client, trainer, prep, onExit, onSent })
       <div className="ses-nav">
         <button className="btn ghost" disabled={s.step === 0} onClick={() => setS({ ...s, step: s.step - 1 })}><ChevronLeft />{t('online.back')}</button>
         {last
-          ? <button className="btn" onClick={() => setS({ ...s, phase: 'summary' })}><Check />{t('online.finish')}</button>
+          ? <button className="btn" onClick={() => setS({ ...s, phase: 'summary', finishedAt: Date.now() })}><Check />{t('online.finish')}</button>
           : <button className="btn" onClick={() => setS({ ...s, step: s.step + 1 })}>{t('common.next')}<ChevronRight /></button>}
       </div>
       <p className="meta center wm-note">{t('online.private', { name: client.name })}</p>
@@ -257,5 +278,17 @@ function SetRow({ label, it, e, onChange, onTick }) {
       <input inputMode="numeric" aria-label={`${label} ${t('online.reps')}`} placeholder={repsOf(it.rx) || ''} value={e.reps ?? ''} onChange={(x) => onChange({ reps: x.target.value })} />
       <button type="button" className="tick" aria-pressed={!!e.done} aria-label={t('common.done')} onClick={onTick}><Check size={16} /></button>
     </div>
+  )
+}
+
+// Client's comment on one exercise ("shoulder hurt on the last set") — goes to the trainer with the session
+function ExNote({ value, onChange, id }) {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(!!value)
+  if (!open) return <button type="button" className="chip exnote-btn" onClick={() => setOpen(true)}><MessageSquare size={12} style={{ verticalAlign: '-2px' }} /> {t('online.exNote')}</button>
+  return (
+    <label className="f exnote" htmlFor={id}>{t('online.exNote')}
+      <textarea id={id} rows={2} placeholder={t('online.exNotePh')} value={value || ''} onChange={(e) => onChange(e.target.value)} />
+    </label>
   )
 }

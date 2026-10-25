@@ -1,7 +1,7 @@
 -- ============================================================
 -- Demo data (fake clients) for building and showing the app.
 --
--- 1. Run 001 and 003 – 009 first.
+-- 1. Run 001 and 003 – 012 first.
 -- 2. Check the email in the LAST line (that person becomes the trainer admin), then run this file.
 --
 -- The six demo clients get "plus" aliases of that email (you+elena@…).
@@ -408,6 +408,13 @@ begin
   update clients set sessions_used = 0 where id = c4;
   perform seed_session(t, c4, current_date + 3, '12:30', 'strength', 'planned', null, '[]', 'online');
   update sessions set meeting_url = 'https://zoom.us/j/0000000000' where client_id = c4 and meeting_url is null;
+
+  -- v3.1: real vs planned duration, and comments per exercise from Nikos
+  update workout_logs set seconds = minutes * 60 + 23, planned_minutes = 40 where client_id = c4;
+  update exercise_logs set note = 'Last round felt heavy, lower back a bit tight.'
+   where client_id = c4 and exercise = 'KB Swing' and workout_log_id = (select id from workout_logs where client_id = c4 order by finished_at desc limit 1);
+  update exercise_logs set note = 'Easy, can go up next time.'
+   where client_id = c4 and exercise = 'Goblet Squat' and workout_log_id = (select id from workout_logs where client_id = c4 order by finished_at desc limit 1);
 
   -- ---------- Sofia (new) + archived clients ----------
   perform seed_session(t, c8, current_date + 3, '09:00', 'strength', 'planned', 'Studio');

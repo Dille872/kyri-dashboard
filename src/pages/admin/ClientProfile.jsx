@@ -3,6 +3,7 @@ import { ArrowLeft, Pencil, Copy, Dumbbell, Video, Archive, RotateCcw, AlertTria
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { useRun, useToast } from '../../components/ui.jsx'
+import { Duration } from '../../components/ui.jsx'
 import Progress from '../../components/Progress.jsx'
 import ProgramLog from '../../components/ProgramLog.jsx'
 import { packStatus } from '../../lib/pack.js'
@@ -25,7 +26,7 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
       supabase.from('sessions').select('*').eq('client_id', client.id).eq('status', 'planned').order('starts_at').limit(60),
       supabase.from('sessions').select('*').eq('client_id', client.id).lt('starts_at', now).order('starts_at', { ascending: false }).limit(20),
       supabase.from('exercise_logs').select('*').eq('client_id', client.id).not('session_id', 'is', null),
-      supabase.from('workout_logs').select('*, exercise_logs(exercise, kg, reps)').eq('client_id', client.id).order('finished_at', { ascending: false }).limit(20),
+      supabase.from('workout_logs').select('*, exercise_logs(exercise, kg, reps, note)').eq('client_id', client.id).order('finished_at', { ascending: false }).limit(20),
       supabase.from('parq_responses').select('*').eq('client_id', client.id).order('created_at', { ascending: false }).limit(1),
       supabase.from('programs').select('id, title, program_days(id, title)').eq('client_id', client.id).maybeSingle(),
     ])
@@ -167,11 +168,11 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
             <div key={it.w.id} className="log-item hist">
               <div className="hist-h">
                 <div className="name">{fmtDate(ymd(new Date(it.at)), locale, { weekday: 'short', day: 'numeric', month: 'short' })}
-                  <span className="meta"> · <span className="fmt"><Video />{t('profile.onlineWorkout', { day: it.w.day_title || '' })}</span> · {it.w.minutes} {t('common.minutes')}</span></div>
+                  <span className="meta"> · <span className="fmt"><Video />{t('profile.onlineWorkout', { day: it.w.day_title || '' })}</span> · <Duration w={it.w} /></span></div>
                 <span className="pill ok">{t('common.done')}</span>
               </div>
               {it.w.note && <div className="feed-note">“{it.w.note}”</div>}
-              {it.w.exercise_logs?.length > 0 && <ul>{it.w.exercise_logs.map((l, i) => <li key={i}>{l.exercise}{l.kg != null ? ` · ${fmtKg(l.kg)} kg` : ''}{l.reps ? ` × ${l.reps}` : ''}</li>)}</ul>}
+              {it.w.exercise_logs?.length > 0 && <ul>{it.w.exercise_logs.map((l, i) => <li key={i}>{l.exercise}{l.kg != null ? ` · ${fmtKg(l.kg)} kg` : ''}{l.reps ? ` × ${l.reps}` : ''}{l.note && <div className="ex-comment">“{l.note}”</div>}</li>)}</ul>}
             </div>
           ) : (
             <div key={it.s.id} className="log-item hist">

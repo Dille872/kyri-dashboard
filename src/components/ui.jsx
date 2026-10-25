@@ -96,3 +96,15 @@ export function Spinner() { return <div className="spin" aria-label="Loading" />
 export async function copyText(text) {
   try { await navigator.clipboard.writeText(text); return true } catch { return false }
 }
+
+// Online session length for the trainer: "52:23 · planned ~40" — orange when it's way off the plan (±25 %)
+export function Duration({ w }) {
+  const { t } = useI18n()
+  const sec = w.seconds ?? (w.minutes || 0) * 60
+  const min = Math.round(sec / 60)
+  const txt = w.seconds ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : `${min} ${t('common.minutes')}`
+  const off = w.planned_minutes && Math.abs(min - w.planned_minutes) > w.planned_minutes * 0.25
+  return (
+    <span className={off ? 'dur-off' : ''}>{txt}{w.planned_minutes ? ` (${t('overview.planned', { n: w.planned_minutes })})` : ''}</span>
+  )
+}

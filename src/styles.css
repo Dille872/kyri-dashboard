@@ -624,3 +624,12 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
 }
 .home-link{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;min-width:0;border-radius:12px}
 .home-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* v3.1.0: stopwatch + comments per exercise */
+.stopwatch{display:inline-flex;align-items:center;gap:5px;font:600 14px var(--mono);font-variant-numeric:tabular-nums;padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink)}
+.total-time{display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--mono);font-size:18px}
+.exnote-btn{justify-self:start;align-self:flex-start;margin-top:6px;color:var(--muted)}
+.exnote{margin-top:6px}
+.exnote textarea{font-size:14px}
+.ex-comment{font-size:13px;color:var(--ink);margin-top:3px;padding-left:8px;border-left:2px solid var(--accent)}
+.dur-off{color:var(--accent-ink);font-weight:700}

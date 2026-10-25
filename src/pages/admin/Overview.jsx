@@ -3,6 +3,7 @@ import { Plus, Check, X, RotateCcw, Video, AlertTriangle } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
 import { Modal, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
+import { Duration } from '../../components/ui.jsx'
 import ProgramLog from '../../components/ProgramLog.jsx'
 import { packStatuses } from '../../lib/pack.js'
 import { useProgramDays } from '../../lib/useProgramDays.js'
@@ -35,7 +36,7 @@ export default function Overview({ data, reload, go, trainerId }) {
       .gte('cancelled_at', new Date(Date.now() - 3 * 864e5).toISOString()).order('cancelled_at', { ascending: false }))
     if (cc.ok) setClientCancels(cc.data)
     const [wl, ps, pq, pr] = await Promise.all([
-      supabase.from('workout_logs').select('*, exercise_logs(exercise, kg)').eq('trainer_id', trainerId)
+      supabase.from('workout_logs').select('*, exercise_logs(exercise, kg, note)').eq('trainer_id', trainerId)
         .gte('finished_at', new Date(Date.now() - 7 * 864e5).toISOString()).order('finished_at', { ascending: false }).limit(10),
       supabase.from('sessions').select('id, client_id, starts_at, status').eq('trainer_id', trainerId).eq('status', 'planned')
         .not('client_id', 'is', null).gte('starts_at', new Date(Date.now() - 60 * 864e5).toISOString()).order('starts_at').limit(1000),
@@ -213,8 +214,9 @@ export default function Overview({ data, reload, go, trainerId }) {
               <div className="row" key={w.id}>
                 <div style={{ minWidth: 0 }}>
                   <button className="name linkish" onClick={() => go('clients', { profile: w.client_id })}>{t('overview.finished', { name: byId[w.client_id]?.name || '', day: w.day_title || '' })}</button>
-                  <div className="meta">{fmtRelative(w.finished_at, locale)} · {w.minutes} {t('common.minutes')}{w.exercise_logs?.length ? ` · ${w.exercise_logs.filter((x) => x.kg != null).slice(0, 3).map((x) => `${x.exercise} ${fmtKg(x.kg)} kg`).join(' · ')}` : ''}</div>
+                  <div className="meta">{fmtRelative(w.finished_at, locale)} · <Duration w={w} />{w.exercise_logs?.length ? ` · ${w.exercise_logs.filter((x) => x.kg != null).slice(0, 3).map((x) => `${x.exercise} ${fmtKg(x.kg)} kg`).join(' · ')}` : ''}</div>
                   {w.note && <div className="feed-note">“{w.note}”</div>}
+                  {w.exercise_logs?.filter((x) => x.note).map((x, i) => <div key={i} className="ex-comment"><b>{x.exercise}:</b> {x.note}</div>)}
                 </div>
                 <span className="pill ok">{t('common.done')}</span>
               </div>

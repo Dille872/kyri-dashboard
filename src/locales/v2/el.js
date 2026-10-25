@@ -39,6 +39,7 @@ export default {
     createProgram: 'Νέο πρόγραμμα', reps: 'επαν.', today: 'kg σήμερα', online: 'Οι online πελάτες καταγράφουν μόνοι τους στην εφαρμογή.',
   },
   overview: {
+    planned: 'προγρ. ~{n}', exComments: 'Σχόλια',
     online: 'Online πελάτες', finished: 'Ο/Η {name} ολοκλήρωσε {day}', noOnline: 'Καμία online προπόνηση τις τελευταίες 7 μέρες.',
     packEnds: 'Πακέτο που τελειώνει', lastOfPack: 'Τελευταία συνεδρία του πακέτου: {when}', reminderOn: 'Υπενθύμιση στην εφαρμογή',
     lastTag: 'Τελευταία πακέτου', packUsed: 'Το πακέτο τελείωσε', fewLeft: 'απομένουν {n} · τίποτα κλεισμένο', newParq: 'Νέο PAR-Q', parqYes: '{n} × «Ναι»',
@@ -86,6 +87,7 @@ export default {
     fewLeft: 'Απομένουν μόνο {n} συνεδρίες στο πακέτο σου.', oneLeft: 'Απομένει μόνο 1 συνεδρία στο πακέτο σου.', used: 'Το πακέτο σου τελείωσε.',
   },
   online: {
+    exNote: 'Σχόλιο για την άσκηση', exNotePh: 'π.χ. πόνεσε ο ώμος στο τελευταίο σετ', total: 'Συνολικός χρόνος', planned: 'προγραμματισμένο ~{n} λεπτά',
     today: 'Η σημερινή προπόνηση', prepTitle: 'Ετοιμάσου', duration: '~{n} λεπτά', steps: '{n} ασκήσεις', need: 'Θα χρειαστείς',
     bodyweight: 'Μόνο το βάρος του σώματος', fromTrainer: 'Από τον/την {trainer}', start: 'Έναρξη προπόνησης', doneToday: 'Τέλος για σήμερα',
     doneTodayBody: 'Μπράβο! Ο/Η {trainer} έχει τα νούμερά σου.', again: 'Νέα προπόνηση', week: 'Αυτή την εβδομάδα',

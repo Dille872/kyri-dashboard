@@ -40,6 +40,7 @@ export default {
     createProgram: 'Create program', reps: 'reps', today: 'kg today', online: 'Online clients log their own sessions in the app.',
   },
   overview: {
+    planned: 'planned ~{n}', exComments: 'Comments',
     online: 'Online clients', finished: '{name} finished {day}', noOnline: 'No online sessions in the last 7 days.',
     packEnds: 'Pack ends soon', lastOfPack: 'Last session of the pack: {when}', reminderOn: 'Reminder in the app',
     lastTag: 'Last of pack', packUsed: 'Pack used up', fewLeft: '{n} left · nothing booked', newParq: 'New PAR-Q', parqYes: '{n} × “Yes”',
@@ -87,6 +88,7 @@ export default {
     fewLeft: 'Only {n} sessions left in your pack.', oneLeft: 'Only 1 session left in your pack.', used: 'Your pack is used up.',
   },
   online: {
+    exNote: 'Comment on this exercise', exNotePh: 'e.g. shoulder hurt on the last set', total: 'Total time', planned: 'planned ~{n} min',
     today: 'Today’s workout', prepTitle: 'Get ready', duration: '~{n} min', steps: '{n} exercises', need: 'You’ll need',
     bodyweight: 'Just your bodyweight', fromTrainer: 'From {trainer}', start: 'Start session', doneToday: 'Done for today',
     doneTodayBody: 'Great work! {trainer} has your numbers.', again: 'Start another session', week: 'This week',

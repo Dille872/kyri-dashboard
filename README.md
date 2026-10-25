@@ -1,4 +1,4 @@
-# Train with Kyri – Coach Dashboard (v3.0.1)
+# Train with Kyri – Coach Dashboard (v3.1.0)
 
 Web-App für Trainer und Klienten: Kalender, Klienten mit Paketen, Zahlungen (Revolut, Überweisung, Bar) und eine Client-App für das Handy. Sprachen: Englisch, Griechisch, Deutsch.
 
@@ -10,7 +10,7 @@ Stack wie beim Agentur-Dashboard: Vite + React + Supabase, Hosting auf Vercel.
 
 1. Auf supabase.com ein **neues Projekt** anlegen, z. B. `kyri-dashboard` (getrennt vom Agentur-Dashboard). Region: Frankfurt.
 2. **SQL Editor** → Inhalt von `sql/001_schema.sql` einfügen → Run.
-3. **SQL Editor** → Inhalt von `sql/003_training.sql` einfügen → Run, danach `sql/004_counting.sql` → Run, danach `sql/005_planning.sql` → Run, danach `sql/006_client_actions.sql` → Run, danach `sql/007_programs.sql` → Run, danach `sql/008_storage.sql` → Run (für eigene Videos), danach `sql/009_session_days.sql` → Run, danach `sql/010_russian.sql` → Run, danach `sql/011_client_stats.sql` → Run.
+3. **SQL Editor** → Inhalt von `sql/003_training.sql` einfügen → Run, danach `sql/004_counting.sql` → Run, danach `sql/005_planning.sql` → Run, danach `sql/006_client_actions.sql` → Run, danach `sql/007_programs.sql` → Run, danach `sql/008_storage.sql` → Run (für eigene Videos), danach `sql/009_session_days.sql` → Run, danach `sql/010_russian.sql` → Run, danach `sql/011_client_stats.sql` → Run, danach `sql/012_session_comments.sql` → Run.
 4. **SQL Editor** → Inhalt von `sql/002_seed_demo.sql` einfügen, **in der letzten Zeile deine E-Mail eintragen** → Run.
    - Du wirst Trainer-Admin.
    - Die 6 Fake-Klienten bekommen Aliase deiner E-Mail (z. B. `du+elena@…`). Ihre Login-Mails landen also bei dir. So kannst du die Client-App selbst testen.
@@ -49,7 +49,7 @@ In einem privaten Fenster damit anmelden → Client-Ansicht. Für die Live-Versi
 ## 4. Übergabe an Kyri
 
 1. Kyri legt eigene Konten an (Supabase, Vercel, GitHub) und lädt dich als Mitglied ein.
-2. In **seinem** Supabase: `001_schema.sql`, `003_training.sql`, `004_counting.sql`, `005_planning.sql`, `006_client_actions.sql`, `007_programs.sql`, `008_storage.sql`, `009_session_days.sql`, `010_russian.sql` und `011_client_stats.sql` ausführen. Kein Seed. Stattdessen einmal:
+2. In **seinem** Supabase: `001_schema.sql`, `003_training.sql`, `004_counting.sql`, `005_planning.sql`, `006_client_actions.sql`, `007_programs.sql`, `008_storage.sql`, `009_session_days.sql`, `010_russian.sql`, `011_client_stats.sql` und `012_session_comments.sql` ausführen. Kein Seed. Stattdessen einmal:
    ```sql
    insert into trainers (slug, brand_name, owner_name, tagline, default_lang)
    values ('kyri', 'Train with Kyri', 'Kyriakos Nicolaou', 'Train with purpose.', 'en');
@@ -82,6 +82,7 @@ Das Logo liegt unter `public/logo.png` (und die App-Icons daneben). Wenn du die 
 - **Eintragen im Gym:** ✓ auf der Übersicht (oder Name antippen) öffnet das Log: Tag wählen (nächster in der Reihenfolge ist vorausgewählt), nur geänderte kg eintragen, leer = wie letztes Mal. Der Haken bleibt manuell.
 - **Hinweis + Video pro Übung:** einmal gespeichert, in allen Programmen genutzt. YouTube-Link oder eigenes Video (Supabase Storage, `008_storage.sql`).
 - **Online-Kunden:** sehen vorher nur, was sie brauchen (Geräte, Dauer, Kyris Hinweis). „Einheit starten“ zeigt eine Übung nach der anderen, kg/Wdh. pro Satz, Pausen- und Intervall-Timer, Wasserzeichen mit Name. Am Ende Notiz → „An Kyri senden“ → erscheint in der Übersicht und im kg-Verlauf.
+- **Kommentar pro Übung + Stoppuhr (v3.1):** In der Online-Einheit läuft oben die Gesamtzeit mit; bei jeder Übung kann der Kunde einen Kommentar schreiben. Kyri sieht beides auf der Übersicht und im Profil, mit „geplant ~X Min.“ daneben (orange, wenn mehr als 25 % daneben).
 - **Gym-Kunden** sehen nichts zum Training (auch technisch gesperrt).
 - **PAR-Q + Regeln:** beim ersten Login Gesundheitsfragen, danach Kyris Regeln (einmal akzeptieren, Datum gespeichert, jederzeit unter „Meine Regeln“). Fragen und Regeln stehen in den Einstellungen; „Ja“-Antworten erscheinen rot bei Kyri.
 - **Paket-Erinnerung:** Die App rechnet aus restlichen Einheiten + gebuchten Terminen aus, welcher Termin der letzte des Pakets ist, und zeigt dem Kunden X Tage vorher (Einstellungen, Standard 2) einen Hinweis mit „Neues Paket buchen“. Bei Kyri: „Paket endet bald“. Demo: nur in der App. Echte Version: zusätzlich per E-Mail.
@@ -106,6 +107,7 @@ sql/008_storage.sql     v2.0.0: Speicher für eigene Übungsvideos
 sql/009_session_days.sql v2.1.0: Programmtage an Terminen
 sql/010_russian.sql     v2.2.0: Russisch als 4. Sprache
 sql/011_client_stats.sql v3.0.0: Zahlen für die Kunden-Startseite (Woche, Monat, Anwesenheit)
+sql/012_session_comments.sql v3.1.0: Kommentar pro Übung, echte vs. geplante Dauer
 src/locales/            en.js, el.js, de.js, ru.js (+ v2/ für die neuen Texte)
 src/pages/admin/        Übersicht, Kalender, Klienten, Zahlungen, Einstellungen
 src/pages/client/       Client-App
