@@ -18,8 +18,9 @@ export function TodayCard({ prep, trainer, onStart }) {
   if (!prep) return <div className="card"><div className="lab">{t('online.today')}</div><div className="meta" style={{ marginTop: 6 }}>{t('online.noProgram')}</div></div>
   return (
     <div className="card today-card">
-      <div className="lab">{t('online.today')}</div>
-      <div className="big">{prep.title}{prep.focus ? ` · ${prep.focus}` : ''}</div>
+      <div className="hero-band" aria-hidden="true"><img src={trainer.logo_url || '/logo.png'} alt="" /></div>
+      <div className="lab">{t('online.today')} · {prep.title}</div>
+      <div className="hero-title">{prep.focus || prep.title}</div>
       <div className="acts" style={{ justifyContent: 'flex-start', marginTop: 8 }}>
         <span className="tag">{t('online.duration', { n: estMinutes(prep.steps) })}</span>
         <span className="tag">{t('online.steps', { n: prep.steps })}</span>
@@ -35,7 +36,7 @@ export function TodayCard({ prep, trainer, onStart }) {
           <div className="prog-cheer" style={{ marginTop: 14 }}><Check size={15} style={{ verticalAlign: '-3px' }} /> {t('online.doneToday')} · {t('online.doneTodayBody', { trainer: tr })}</div>
           <button className="btn block ghost" style={{ marginTop: 10 }} onClick={onStart}><Play />{t('online.again')}</button>
         </>
-      ) : <button className="btn block" style={{ marginTop: 14 }} onClick={onStart}><Play />{t('online.start')}</button>}
+      ) : <button className="btn block cta" style={{ marginTop: 14 }} onClick={onStart}>{t('online.start')}<ChevronRight /></button>}
       {prep.week?.length > 0 && (
         <div className="meta" style={{ marginTop: 12 }}>{t('online.week')}: {prep.week.map((w) => `${w.title} (${fmtDate(ymd(new Date(w.at)), locale, { weekday: 'short' })})`).join(' · ')}</div>
       )}

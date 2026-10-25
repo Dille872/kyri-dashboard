@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Clock, Copy, LogOut, Video, CalendarPlus, X, MessageCircle, PackagePlus, ScrollText, Bell } from 'lucide-react'
+import { Check, Clock, Copy, LogOut, Video, CalendarPlus, X, MessageCircle, PackagePlus, ScrollText, Bell, Home, CalendarDays, CreditCard, User, ChevronRight } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
-import { LangSwitch, Logo, Modal, Spinner, copyText, useRun, useToast } from '../../components/ui.jsx'
+import { LANGS } from '../../i18n.jsx'
+import { Logo, Modal, Spinner, Wordmark, copyText, useRun, useToast } from '../../components/ui.jsx'
 import { calendarEvent, downloadIcs, googleCalendarUrl, whatsappUrl } from '../../lib/calendar.js'
 import { fmtDate, fmtDateTime, money, payState, sessionsLeft, ymd } from '../../lib/format.js'
 import { packStatus } from '../../lib/pack.js'
@@ -11,12 +12,13 @@ import OnlineSession, { TodayCard } from './OnlineSession.jsx'
 import { MethodTag } from '../admin/Payments.jsx'
 
 export default function ClientApp({ clientId, trainerId, signOut }) {
-  const { t, locale, setLang } = useI18n()
+  const { t, locale, lang, setLang } = useI18n()
   const run = useRun()
   const toast = useToast()
   const [d, setD] = useState(null)
   const [screen, setScreen] = useState('home')   // home | pay | sent | session
   const [rulesOpen, setRulesOpen] = useState(false)
+  const [tab, setTab] = useState('home')          // home | sessions | money | profile
   const [busy, setBusy] = useState(false)
   const [cancelFor, setCancelFor] = useState(null)    // session to cancel
   const [calFor, setCalFor] = useState(null)          // session to add to calendar
@@ -25,7 +27,7 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
 
   const load = useCallback(async () => {
     const now = new Date().toISOString()
-    const [tr, cl, se, pa, past, pk, rn, prep] = await Promise.all([
+    const [tr, cl, se, pa, past, pk, rn, prep, st] = await Promise.all([
       run(supabase.from('trainers').select('*').eq('id', trainerId).single()),
       run(supabase.from('clients').select('*').eq('id', clientId).single()),
       run(supabase.from('sessions').select('*').eq('client_id', clientId).eq('status', 'planned').gte('starts_at', now).order('starts_at').limit(30)),
@@ -35,9 +37,10 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
       run(supabase.from('packages').select('*').eq('trainer_id', trainerId).eq('active', true).order('sort')),
       run(supabase.from('renewal_requests').select('*').eq('client_id', clientId).order('created_at', { ascending: false }).limit(1)),
       supabase.rpc('workout_prep', { p_client: clientId }),
+      supabase.rpc('my_stats', { p_client: clientId }),
     ])
     if (tr.ok && cl.ok) setD({ trainer: tr.data, client: cl.data, upcoming: se.data || [], payments: pa.data || [],
-      pastPlanned: (past.data || []).length, packages: pk.data || [], renewal: (rn.data || [])[0] || null, prep: prep.data || null })
+      pastPlanned: (past.data || []).length, packages: pk.data || [], renewal: (rn.data || [])[0] || null, prep: prep.data || null, stats: st.data || null })
   }, [clientId, trainerId, run])
   useEffect(() => { load() }, [load])
 
@@ -89,11 +92,13 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
   }
   const copy = async (v) => toast((await copyText(v)) ? t('common.copied') : v)
 
+  const pickLang = (l) => { setLang(l); supabase.rpc('set_my_lang', { p_lang: l }).then(() => {}) }
   const top = (
     <div className="topbar">
-      <div className="brand"><Logo trainer={trainer} /><div className="eyebrow">{trainer.brand_name}</div></div>
-      <div className="acts"><LangSwitch onChange={(l) => supabase.rpc('set_my_lang', { p_lang: l }).then(() => {})} />
-        <button className="chip" onClick={signOut} aria-label={t('common.signOut')} title={t('common.signOut')}><LogOut size={14} style={{ verticalAlign: '-2px' }} /></button></div>
+      <div className="brand"><img className="brand-mark" src={trainer.logo_url || '/logo.png'} alt="" /><Wordmark trainer={trainer} /></div>
+      <div className="seg lang-mini" role="group" aria-label={t('common.language')}>
+        {LANGS.map((l) => <button key={l.code} aria-pressed={lang === l.code} onClick={() => pickLang(l.code)}>{l.short}</button>)}
+      </div>
     </div>
   )
 
@@ -141,98 +146,185 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
     </div>
   )
 
+  const renew = () => { setPickPkg(client.package_id || packages[0].id); setRenewOpen(true) }
+  const st = d.stats || {}
+  const go = (x) => { setTab(x); window.scrollTo(0, 0) }
+  const sessionRow = (s) => (
+    <div className="row" key={s.id} style={{ padding: '10px 0' }}>
+      <div style={{ minWidth: 0 }}><div className="name">{fmtDateTime(s.starts_at, locale)}</div>
+        <div className="meta">{s.format === 'online' ? t('formats.online') : t(`kinds.${s.kind}`)}{s.location ? ` · ${s.location}` : ''}</div></div>
+      <div className="acts" style={{ flexWrap: 'nowrap' }}>
+        <button className="icon-btn" style={{ width: 38, height: 38 }} onClick={() => setCalFor(s)} aria-label={t('client.addCal')} title={t('client.addCal')}><CalendarPlus /></button>
+        <button className="icon-btn" style={{ width: 38, height: 38 }} onClick={() => setCancelFor(s)} aria-label={t('client.cancel')} title={t('client.cancel')}><X /></button>
+      </div>
+    </div>
+  )
+  const packCard = (
+    <div className="card">
+      <div className="lab">{t('client.package')}</div>
+      {left == null ? <div className="big">{t('client.unlimited')}</div> : (
+        <><div className="big">{t('client.left', { left, total: client.sessions_total })}</div>
+          <div className="bar full"><i style={{ width: `${Math.min(100, (left / Math.max(client.sessions_total, 1)) * 100)}%` }} /></div></>
+      )}
+      {renewal?.status === 'pending' ? (
+        <div className="pill info" style={{ marginTop: 12 }}>{t('client.renewPending', { trainer: trainerName })}</div>
+      ) : ((left != null && left <= 2) || pack) && packages.length > 0 ? (
+        <button className="btn block" style={{ marginTop: 12 }} onClick={renew}><PackagePlus />{t('client.renew')}</button>
+      ) : null}
+    </div>
+  )
+  const payCard = (
+    <div className="card">
+      <div className="lab">{t('client.nextPayment')}</div>
+      {pending ? (
+        <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+            <div className="big">{money(pending.amount, locale)}</div><span className="pill info">{t('client.waiting')}</span></div>
+          <p className="meta" style={{ margin: '8px 0 0' }}>{t('client.waitingBody', { trainer: trainerName })}</p></>
+      ) : client.next_due_date ? (
+        <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+            <div className="big">{money(client.price, locale)}</div>
+            <span className={`pill ${state.cls}`}>{t(`payState.${state.key}`, { n: state.n, date: fmtDate(state.date, locale) })}</span></div>
+          {lastDecided?.status === 'rejected' && <p className="meta" style={{ margin: '8px 0 0' }}>{t('client.rejected', { trainer: trainerName })}</p>}
+          {(trainer.revolut_url || trainer.iban) && <button className="btn block" style={{ marginTop: 12 }} onClick={() => setScreen('pay')}>{t('client.payNow')}</button>}</>
+      ) : <div className="meta" style={{ marginTop: 6 }}>{t('client.nothingDue')}</div>}
+    </div>
+  )
+
   return (
-    <div className="mobile">
+    <div className="mobile capp">
       {top}
-      <div className="hello">{t('client.hello', { name: first })}</div>
-      {pack && (pack.remind || pack.kind === 'used') && renewal?.status !== 'pending' && (
-        <div className="card pack-alert">
-          <Bell size={18} style={{ flex: 'none', marginTop: 2 }} />
-          <div style={{ minWidth: 0 }}>
-            <div className="name">{pack.kind === 'last' ? t('pack.lastTitle') : pack.kind === 'used' ? t('pack.used') : pack.left === 1 ? t('pack.oneLeft') : t('pack.fewLeft', { n: pack.left })}</div>
-            {pack.kind === 'last' && <div className="meta">{t('pack.lastBody', { when: fmtDateTime(pack.session.starts_at, locale) })}</div>}
-            {packages.length > 0 && <button className="btn small" style={{ marginTop: 10 }} onClick={() => { setPickPkg(client.package_id || packages[0].id); setRenewOpen(true) }}><PackagePlus />{t('client.renew')}</button>}
-          </div>
-        </div>
-      )}
 
-      <div className="card">
-        <div className="lab">{t('client.nextSession')}</div>
-        {sessions[0] ? (
-          <><div className="big">{fmtDateTime(sessions[0].starts_at, locale)}</div>
-            <div className="meta">{sessions[0].format === 'online' ? t('formats.online') : t(`kinds.${sessions[0].kind}`)}{sessions[0].location ? ` · ${sessions[0].location}` : ''}</div>
-            {sessions[0].format === 'online' && sessions[0].meeting_url && (
-              <a className="btn block" style={{ marginTop: 12 }} href={sessions[0].meeting_url} target="_blank" rel="noopener noreferrer"><Video />{t('client.joinCall')}</a>
+      {tab === 'home' && (
+        <>
+          <div className="welcome">
+            <div><div className="meta">{t('app.welcome')}</div><div className="hello">{first}</div></div>
+            {st.week_target != null && (
+              <div className="week-bars" aria-label={`${t('app.thisWeek')}: ${st.week_done} / ${st.week_target}`}>
+                <div className="meta">{t('app.thisWeek')}</div>
+                <div className="wb" aria-hidden="true">{Array.from({ length: Math.min(st.week_target, 7) }, (_, i) => <i key={i} className={i < st.week_done ? 'on' : ''} />)}</div>
+                <b>{st.week_done} / {st.week_target}</b>
+              </div>
             )}
-            <div className="acts" style={{ justifyContent: 'flex-start', marginTop: 12 }}>
-              <button className="chip" onClick={() => setCalFor(sessions[0])}><CalendarPlus size={13} style={{ verticalAlign: '-2px' }} /> {t('client.addCal')}</button>
-              <button className="chip" onClick={() => setCancelFor(sessions[0])}><X size={13} style={{ verticalAlign: '-2px' }} /> {t('client.cancel')}</button>
-            </div></>
-        ) : <div className="meta" style={{ marginTop: 6 }}>{t('client.noSession')}</div>}
-        {sessions.length > 1 && (
-          <div className="list" style={{ marginTop: 10 }}>
-            {sessions.slice(1).map((s) => (
-              <div className="row" key={s.id} style={{ padding: '9px 0' }}>
-                <div><div>{fmtDateTime(s.starts_at, locale)}</div><div className="meta">{s.format === 'online' ? t('formats.online') : t(`kinds.${s.kind}`)}</div></div>
-                <div className="acts" style={{ flexWrap: 'nowrap' }}>
-                  <button className="icon-btn" style={{ width: 34, height: 34 }} onClick={() => setCalFor(s)} aria-label={t('client.addCal')} title={t('client.addCal')}><CalendarPlus /></button>
-                  <button className="icon-btn" style={{ width: 34, height: 34 }} onClick={() => setCancelFor(s)} aria-label={t('client.cancel')} title={t('client.cancel')}><X /></button>
-                </div>
-              </div>
-            ))}
           </div>
-        )}
-      </div>
 
-      {wa && (
-        <a className="btn block ghost" href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle />{t('client.writeTrainer', { trainer: trainerName })}</a>
+          {pack && (pack.remind || pack.kind === 'used') && renewal?.status !== 'pending' && (
+            <div className="card pack-alert">
+              <Bell size={18} style={{ flex: 'none', marginTop: 2 }} />
+              <div style={{ minWidth: 0 }}>
+                <div className="name">{pack.kind === 'last' ? t('pack.lastTitle') : pack.kind === 'used' ? t('pack.used') : pack.left === 1 ? t('pack.oneLeft') : t('pack.fewLeft', { n: pack.left })}</div>
+                {pack.kind === 'last' && <div className="meta">{t('pack.lastBody', { when: fmtDateTime(pack.session.starts_at, locale) })}</div>}
+                {packages.length > 0 && <button className="btn small" style={{ marginTop: 10 }} onClick={renew}><PackagePlus />{t('client.renew')}</button>}
+              </div>
+            </div>
+          )}
+
+          {online && <TodayCard prep={prep} trainer={trainer} onStart={() => { setScreen('session'); window.scrollTo(0, 0) }} />}
+
+          <div className="card next-card">
+            <div className="lab">{t('client.nextSession')}</div>
+            {sessions[0] ? (
+              <><div className="big">{fmtDateTime(sessions[0].starts_at, locale)}</div>
+                <div className="meta">{sessions[0].format === 'online' ? t('formats.online') : t(`kinds.${sessions[0].kind}`)}{sessions[0].location ? ` · ${sessions[0].location}` : ''}</div>
+                {sessions[0].format === 'online' && sessions[0].meeting_url && (
+                  <a className="btn block" style={{ marginTop: 12 }} href={sessions[0].meeting_url} target="_blank" rel="noopener noreferrer"><Video />{t('client.joinCall')}</a>
+                )}
+                <div className="two-btn">
+                  <button className="btn ghost" onClick={() => setCalFor(sessions[0])}><CalendarPlus />{t('client.addCal')}</button>
+                  <button className="btn ghost" onClick={() => setCancelFor(sessions[0])}><X />{t('client.cancel')}</button>
+                </div></>
+            ) : <div className="meta" style={{ marginTop: 6 }}>{t('client.noSession')}</div>}
+          </div>
+
+          <div className="tiles">
+            <button className="tile" onClick={() => go('sessions')}><CalendarDays /><span>{t('app.tileSessions')}</span></button>
+            <button className="tile" onClick={() => go('money')}><CreditCard /><span>{t('app.tilePay')}</span></button>
+            {wa ? <a className="tile" href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle /><span>{t('app.tileChat')}</span></a>
+              : <button className="tile" onClick={() => setRulesOpen(true)}><ScrollText /><span>{t('app.tileRules')}</span></button>}
+          </div>
+
+          <div className="sec-h"><h2>{t('app.yourProgress')}</h2></div>
+          <div className="stat-tiles">
+            <div className="stat"><div className="meta">{t('app.statSessions')}</div><b>{st.month_done ?? 0}</b><span className="meta">{t('app.thisMonth')}</span></div>
+            {left != null
+              ? <div className="stat"><div className="meta">{t('app.statPack')}</div><b>{left} / {client.sessions_total}</b><span className={left <= 2 ? 'hot' : 'meta'}>{t('app.stillLeft')}</span></div>
+              : <div className="stat"><div className="meta">{t('app.thisWeek')}</div><b>{st.week_done ?? 0}</b><span className="meta">{t('app.statSessions')}</span></div>}
+            <div className="stat ring">
+              <div className="meta">{t('app.attendance')}</div>
+              {st.attendance != null ? (
+                <svg width="56" height="56" viewBox="0 0 56 56" role="img" aria-label={`${t('app.attendance')} ${st.attendance} %`}>
+                  <circle cx="28" cy="28" r="22" fill="none" stroke="var(--line)" strokeWidth="5" />
+                  <circle cx="28" cy="28" r="22" fill="none" stroke="var(--accent)" strokeWidth="5" strokeLinecap="round"
+                    strokeDasharray={`${(st.attendance / 100) * 138.2} 138.2`} transform="rotate(-90 28 28)" />
+                  <text x="28" y="32" textAnchor="middle" fontSize="12" fontWeight="800" fill="var(--ink)">{st.attendance}%</text>
+                </svg>
+              ) : <b>–</b>}
+            </div>
+          </div>
+        </>
       )}
 
-      {online && <TodayCard prep={prep} trainer={trainer} onStart={() => { setScreen('session'); window.scrollTo(0, 0) }} />}
-
-      <div className="card">
-        <div className="lab">{t('client.package')}</div>
-        {left == null ? <div className="big">{t('client.unlimited')}</div> : (
-          <><div className="big">{t('client.left', { left, total: client.sessions_total })}</div>
-            <div className="bar full"><i style={{ width: `${Math.min(100, (left / Math.max(client.sessions_total, 1)) * 100)}%` }} /></div></>
-        )}
-        {renewal?.status === 'pending' ? (
-          <div className="pill info" style={{ marginTop: 12 }}>{t('client.renewPending', { trainer: trainerName })}</div>
-        ) : ((left != null && left <= 2) || pack) && packages.length > 0 ? (
-          <button className="btn block" style={{ marginTop: 12 }} onClick={() => { setPickPkg(client.package_id || packages[0].id); setRenewOpen(true) }}><PackagePlus />{t('client.renew')}</button>
-        ) : null}
-      </div>
-
-      <div className="card">
-        <div className="lab">{t('client.nextPayment')}</div>
-        {pending ? (
-          <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-              <div className="big">{money(pending.amount, locale)}</div><span className="pill info">{t('client.waiting')}</span></div>
-            <p className="meta" style={{ margin: '8px 0 0' }}>{t('client.waitingBody', { trainer: trainerName })}</p></>
-        ) : client.next_due_date ? (
-          <><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-              <div className="big">{money(client.price, locale)}</div>
-              <span className={`pill ${state.cls}`}>{t(`payState.${state.key}`, { n: state.n, date: fmtDate(state.date, locale) })}</span></div>
-            {lastDecided?.status === 'rejected' && <p className="meta" style={{ margin: '8px 0 0' }}>{t('client.rejected', { trainer: trainerName })}</p>}
-            {(trainer.revolut_url || trainer.iban) && <button className="btn block" style={{ marginTop: 12 }} onClick={() => setScreen('pay')}>{t('client.payNow')}</button>}</>
-        ) : <div className="meta" style={{ marginTop: 6 }}>{t('client.nothingDue')}</div>}
-      </div>
-
-      {payments.filter((p) => p.status === 'confirmed').length > 0 && (
-        <div className="card">
-          <div className="lab">{t('client.history')}</div>
-          <div className="list" style={{ marginTop: 6 }}>
-            {payments.filter((p) => p.status === 'confirmed').slice(0, 6).map((p) => (
-              <div className="row" key={p.id} style={{ padding: '9px 0' }}>
-                <div><div className="name">{money(p.amount, locale)}</div><div className="meta">{fmtDate(p.paid_on, locale, { day: 'numeric', month: 'short', year: 'numeric' })}</div></div>
-                <MethodTag method={p.method} />
-              </div>
-            ))}
+      {tab === 'sessions' && (
+        <>
+          <div className="hello">{t('app.sessions')}</div>
+          <div className="card">
+            {upcoming.length === 0 ? <div className="meta">{t('app.noUpcoming')}</div> : (
+              <div className="list">{upcoming.slice(0, 20).map(sessionRow)}</div>
+            )}
           </div>
-        </div>
+          {wa && <a className="btn block ghost" href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle />{t('client.writeTrainer', { trainer: trainerName })}</a>}
+        </>
       )}
-      {trainer.rules_text && <button className="btn block ghost" onClick={() => setRulesOpen(true)}><ScrollText />{t('onboard.myRules')}</button>}
-      <p className="meta center">{t('client.installHint')}</p>
+
+      {tab === 'money' && (
+        <>
+          <div className="hello">{t('app.money')}</div>
+          {packCard}
+          {payCard}
+          {payments.filter((p) => p.status === 'confirmed').length > 0 && (
+            <div className="card">
+              <div className="lab">{t('client.history')}</div>
+              <div className="list" style={{ marginTop: 6 }}>
+                {payments.filter((p) => p.status === 'confirmed').slice(0, 6).map((p) => (
+                  <div className="row" key={p.id} style={{ padding: '9px 0' }}>
+                    <div><div className="name">{money(p.amount, locale)}</div><div className="meta">{fmtDate(p.paid_on, locale, { day: 'numeric', month: 'short', year: 'numeric' })}</div></div>
+                    <MethodTag method={p.method} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'profile' && (
+        <>
+          <div className="hello">{client.name}</div>
+          <div className="card" style={{ padding: 6 }}>
+            {trainer.rules_text && <button className="menu-row" onClick={() => setRulesOpen(true)}><ScrollText /><span>{t('onboard.myRules')}</span><ChevronRight className="chev" /></button>}
+            {wa && <a className="menu-row" href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle /><span>{t('client.writeTrainer', { trainer: trainerName })}</span><ChevronRight className="chev" /></a>}
+          </div>
+          <div className="card">
+            <div className="lab" style={{ marginBottom: 10 }}>{t('common.language')}</div>
+            <div className="grid" style={{ gap: 8 }}>
+              {LANGS.map((l) => (
+                <button key={l.code} className="choice" aria-pressed={lang === l.code} onClick={() => pickLang(l.code)}>
+                  <b>{l.label}</b>{lang === l.code && <Check size={16} />}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button className="btn block ghost" onClick={signOut}><LogOut />{t('common.signOut')}</button>
+          <p className="meta center">{t('client.installHint')}</p>
+        </>
+      )}
+
+      <nav className="tabbar ctab" aria-label={t('nav.more')}>
+        {[['home', Home], ['sessions', CalendarDays], ['money', CreditCard], ['profile', User]].map(([k, Icon]) => (
+          <button key={k} aria-current={tab === k} onClick={() => go(k)}>
+            <span className="tab-ic"><Icon /></span><span>{t(`app.${k}`)}</span>
+          </button>
+        ))}
+      </nav>
 
       <Modal open={rulesOpen} title={t('onboard.myRules')} onClose={() => setRulesOpen(false)}>
         {rulesOpen && (

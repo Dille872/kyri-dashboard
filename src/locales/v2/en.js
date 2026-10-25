@@ -26,6 +26,7 @@ export default {
   calendar: {
     programDay: 'Program day', noDay: '– not set –', noProgram: 'No program yet',
   },
+  app: { home: 'Home', sessions: 'Sessions', money: 'Payments', profile: 'Profile', welcome: 'Welcome back,', thisWeek: 'This week', yourProgress: 'Your progress', statSessions: 'Sessions', thisMonth: 'this month', statPack: 'Pack', stillLeft: 'left', attendance: 'Attendance', tileSessions: 'Sessions', tilePay: 'Pay', tileChat: 'WhatsApp', tileRules: 'My rules', allSessions: 'All', noUpcoming: 'No sessions booked.', coach: 'Your coach', notifications: 'Notifications' },
   media: {
     note: 'Note for the client', notePh: 'e.g. Keep your back straight, slow on the way down', video: 'How-to video',
     yt: 'YouTube link', file: 'Upload own video', fileHelp: 'MP4 or MOV from your phone, up to 50 MB.', current: 'Current video',

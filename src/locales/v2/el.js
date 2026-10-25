@@ -25,6 +25,7 @@ export default {
   calendar: {
     programDay: 'Μέρα προγράμματος', noDay: '– δεν ορίστηκε –', noProgram: 'Δεν υπάρχει πρόγραμμα',
   },
+  app: { home: 'Αρχική', sessions: 'Ραντεβού', money: 'Πληρωμές', profile: 'Προφίλ', welcome: 'Καλώς ήρθες ξανά,', thisWeek: 'Αυτή την εβδομάδα', yourProgress: 'Η πρόοδός σου', statSessions: 'Προπονήσεις', thisMonth: 'αυτόν τον μήνα', statPack: 'Πακέτο', stillLeft: 'απομένουν', attendance: 'Παρουσία', tileSessions: 'Ραντεβού', tilePay: 'Πληρωμή', tileChat: 'WhatsApp', tileRules: 'Κανόνες', allSessions: 'Όλα', noUpcoming: 'Δεν υπάρχουν κλεισμένα ραντεβού.', coach: 'Ο προπονητής σου', notifications: 'Ειδοποιήσεις' },
   media: {
     note: 'Σημείωση για τον πελάτη', notePh: 'π.χ. Ίσια πλάτη, αργά στην κάθοδο', video: 'Βίντεο τεχνικής',
     yt: 'Σύνδεσμος YouTube', file: 'Ανέβασμα δικού σου βίντεο', fileHelp: 'MP4 ή MOV από το κινητό, έως 50 MB.', current: 'Τρέχον βίντεο',

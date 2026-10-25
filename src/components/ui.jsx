@@ -58,6 +58,13 @@ export function Logo({ trainer, big }) {
   return <div className={`mark ${big ? 'big' : ''}`}><img src={src} alt={trainer?.brand_name || 'Logo'} /></div>
 }
 
+// Brand name as a wordmark: "TRAINWITH" + last word in the accent colour ("KYRI")
+export function Wordmark({ trainer, size }) {
+  const words = String(trainer?.brand_name || '').toUpperCase().split(/\s+/).filter(Boolean)
+  const last = words.pop() || ''
+  return <span className={`wordmark ${size || ''}`}>{words.join('')}<em>{last}</em></span>
+}
+
 export function LangSwitch({ onChange }) {
   const { lang, setLang } = useI18n()
   return (

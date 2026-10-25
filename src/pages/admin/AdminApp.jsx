@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { LayoutGrid, CalendarDays, Users, Dumbbell, CreditCard, Settings as Cog, LogOut, Menu, ChevronRight } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { LANGS, useI18n } from '../../i18n.jsx'
-import { LangSwitch, Logo, Spinner, useIsMobile, useRun } from '../../components/ui.jsx'
+import { LangSwitch, Logo, Spinner, Wordmark, useIsMobile, useRun } from '../../components/ui.jsx'
 import Overview from './Overview.jsx'
 import Calendar from './Calendar.jsx'
 import Clients from './Clients.jsx'
@@ -65,7 +65,7 @@ export default function AdminApp({ trainerId, user, signOut }) {
     <div className="mapp">
       <header className="mtop">
         <Logo trainer={data.trainer} />
-        <div className="mtop-txt"><b>{data.trainer.brand_name}</b><small>{t(`nav.${view}`)}</small></div>
+        <div className="mtop-txt"><b><Wordmark trainer={data.trainer} /></b><small>{t(`nav.${view}`)}</small></div>
       </header>
       <main className="mmain">
         {view === 'more'
@@ -91,7 +91,7 @@ export default function AdminApp({ trainerId, user, signOut }) {
       <aside className="side">
         <div className="brand">
           <Logo trainer={data.trainer} />
-          <div><b>{data.trainer.brand_name}</b><small>{t('nav.coachDashboard')}</small></div>
+          <div><b><Wordmark trainer={data.trainer} /></b><small>{t('nav.coachDashboard')}</small></div>
         </div>
         <nav className="nav">
           {SIDE.map((v) => {

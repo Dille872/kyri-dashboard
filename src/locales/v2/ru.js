@@ -25,6 +25,7 @@ export default {
   calendar: {
     programDay: 'День программы', noDay: '– не выбран –', noProgram: 'Программы пока нет',
   },
+  app: { home: 'Главная', sessions: 'Тренировки', money: 'Оплаты', profile: 'Профиль', welcome: 'С возвращением,', thisWeek: 'На этой неделе', yourProgress: 'Твой прогресс', statSessions: 'Тренировки', thisMonth: 'в этом месяце', statPack: 'Пакет', stillLeft: 'осталось', attendance: 'Посещаемость', tileSessions: 'Тренировки', tilePay: 'Оплатить', tileChat: 'WhatsApp', tileRules: 'Правила', allSessions: 'Все', noUpcoming: 'Тренировок не запланировано.', coach: 'Твой тренер', notifications: 'Уведомления' },
   media: {
     note: 'Заметка для клиента', notePh: 'например: спина прямая, опускай медленно', video: 'Видео техники',
     yt: 'Ссылка YouTube', file: 'Загрузить своё видео', fileHelp: 'MP4 или MOV с телефона, до 50 МБ.', current: 'Текущее видео',

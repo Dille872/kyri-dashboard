@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Mail } from 'lucide-react'
 import { supabase } from '../supabase.js'
 import { useI18n } from '../i18n.jsx'
-import { LangSwitch, Logo, useToast } from '../components/ui.jsx'
+import { LangSwitch, Logo, Wordmark, useToast } from '../components/ui.jsx'
 
 export default function Login() {
   const { t } = useI18n()
@@ -47,6 +47,8 @@ export default function Login() {
     <div className="mobile login">
       <div className="topbar" style={{ justifyContent: 'flex-end' }}><LangSwitch /></div>
       <Logo big />
+      {/* before sign-in the trainer isn't known yet: brand from .env (VITE_BRAND_NAME), default Train with Kyri */}
+      <div className="center"><Wordmark trainer={{ brand_name: import.meta.env.VITE_BRAND_NAME || 'Train with Kyri' }} size="xl" /></div>
       {usePw ? (
         <form className="form" onSubmit={signInPw}>
           <div className="hello center">{t('login.welcome')}</div>
