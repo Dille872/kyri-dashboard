@@ -2,6 +2,7 @@ export default {
   nav: { programs: 'Programme' },
   common: { yes: 'Ja', no: 'Nein', open: 'Öffnen', search: 'Suchen…', moveUp: 'Nach oben', moveDown: 'Nach unten', next: 'Weiter', done: 'Fertig' },
   prog: {
+    gymHint: "{name} ist als „Gym“ eingestellt: {name} sieht dieses Programm nur an Tagen mit einem Online-Termin. Soll {name} jederzeit selbst trainieren können, stell auf „Gym + Online“.", makeHybrid: "Auf Gym + Online stellen",
     title: 'Programme', subtitle: 'Die Tage wiederholen sich Woche für Woche, wie in deinen Notizen. Die kg-Historie wächst mit jeder eingetragenen Einheit. Kunden sehen Programme nie.',
     withProgram: 'Programme', need: 'Brauchen ein Programm', needHint: 'Aktive Kunden ohne Programm', none: 'Noch keine Programme.',
     create: 'Programm anlegen', newTitle: '{name} Programm', onlyYou: '{name} · nur du siehst das',

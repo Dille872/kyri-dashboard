@@ -12,7 +12,7 @@ const KEY = 'programs-client'
 const toIsoStartOfToday = () => toIso(ymd(), '00:00')
 
 // Programs replace the weekly planning: days that repeat, like Kyri's notes.
-export default function Programs({ data, trainerId, go }) {
+export default function Programs({ data, trainerId, go, reload }) {
   const { t } = useI18n()
   const mobile = useIsMobile()
   const [list, setList] = useState(null)       // programs of all clients (light)
@@ -72,7 +72,7 @@ export default function Programs({ data, trainerId, go }) {
 
   const editor = client && byClient[client.id]
     ? <Editor key={client.id} client={client} data={data} trainerId={trainerId} lib={lib} reloadLib={reloadLib}
-        onChanged={loadList} onBack={mobile ? () => setClientId('') : null} onOpen={(id) => setClientId(id)} go={go} />
+        onChanged={loadList} onBack={mobile ? () => setClientId('') : null} onOpen={(id) => setClientId(id)} go={go} reload={reload} />
     : null
 
   return (
@@ -90,7 +90,7 @@ export default function Programs({ data, trainerId, go }) {
   )
 }
 
-function Editor({ client, data, trainerId, lib, reloadLib, onChanged, onBack, onOpen }) {
+function Editor({ client, data, trainerId, lib, reloadLib, onChanged, onBack, onOpen, reload }) {
   const { t, locale } = useI18n()
   const run = useRun()
   const toast = useToast()
@@ -181,6 +181,17 @@ function Editor({ client, data, trainerId, lib, reloadLib, onChanged, onBack, on
   return (
     <>
       {onBack && <button className="chip" onClick={onBack} style={{ marginBottom: 14 }}><ArrowLeft size={13} style={{ verticalAlign: '-2px' }} /> {t('prog.backToList')}</button>}
+      {client.mode === 'gym' && (
+        <div className="notice" style={{ marginBottom: 14 }}>
+          {t('prog.gymHint', { name: client.name.split(' ')[0] })}
+          <div className="acts" style={{ justifyContent: 'flex-start', marginTop: 10 }}>
+            <button className="chip solid" onClick={async () => {
+              const { error } = await supabase.from('clients').update({ mode: 'hybrid' }).eq('id', client.id)
+              if (!error) reload?.()
+            }}>{t('prog.makeHybrid')}</button>
+          </div>
+        </div>
+      )}
       <div className="head" style={{ marginBottom: 16 }}>
         <div style={{ minWidth: 0 }}>
           <div className="eyebrow">{t('prog.onlyYou', { name: client.name })}</div>

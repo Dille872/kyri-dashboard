@@ -1,4 +1,4 @@
-# Train with Kyri – Coach Dashboard (v4.2.0)
+# Train with Kyri – Coach Dashboard (v4.3.0)
 
 Web-App für Trainer und Klienten: Kalender, Klienten mit Paketen, Zahlungen (Revolut, Überweisung, Bar) und eine Client-App für das Handy. Sprachen: Englisch, Griechisch, Deutsch.
 
@@ -111,6 +111,7 @@ sql/011_client_stats.sql v3.0.0: Zahlen für die Kunden-Startseite (Woche, Monat
 sql/012_session_comments.sql v3.1.0: Kommentar pro Übung, echte vs. geplante Dauer
 sql/013_privacy.sql     v4.0.0: Datenschutz, Einwilligung beim PAR-Q, Kontakt-E-Mail
 sql/014_translations.sql v4.1.0: automatische Übersetzung (Cache + Schalter)
+sql/015_online_session_program.sql v4.3.0: Programm auch für Gym-Kunden am Tag eines Online-Termins
 supabase/functions/translate/index.ts  v4.1.0: Server-Funktion für DeepL
 sql/LIVE_SETUP.sql      Kyris echtes System anlegen (statt Seed)
 supabase/email-magic-link.html  Login-Mail im Kyri-Look

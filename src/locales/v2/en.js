@@ -3,6 +3,7 @@ export default {
   nav: { programs: 'Programs' },
   common: { yes: 'Yes', no: 'No', open: 'Open', search: 'Search…', moveUp: 'Move up', moveDown: 'Move down', next: 'Next', done: 'Done' },
   prog: {
+    gymHint: "{name} is set to “Gym”: {name} only sees this program on days with an online session. To let {name} train on their own any day, set them to “Gym + Online”.", makeHybrid: "Set to Gym + Online",
     title: 'Programs', subtitle: 'Days repeat week after week, like in your notes. The kg history grows every time you log a session. Clients never see programs.',
     withProgram: 'Programs', need: 'Need programming', needHint: 'Active clients without a program', none: 'No programs yet.',
     create: 'Create program', newTitle: '{name} Program', onlyYou: '{name} · only you see this',
