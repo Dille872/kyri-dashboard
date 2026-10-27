@@ -15,6 +15,7 @@ import { Tx } from '../../lib/translate.jsx'
 export default function ClientProfile({ client, data, trainerId, onBack, onEdit, onInvite, onArchive, go, reload }) {
   const { t, locale } = useI18n()
   const trOn = !!data.trainer?.translate_comments
+  const coach = !!data.trainer?.coaching_enabled
   const run = useRun()
   const toast = useToast()
   const [d, setD] = useState(null)
@@ -139,19 +140,19 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
               {pack.kind === 'last' ? <>{t('overview.lastOfPack', { when: '' })}<b style={{ color: 'var(--ink)' }}>{when(pack.session.starts_at)}</b> · {t('settings.reminder')}: {data.trainer.reminder_days ?? 2} d</>
                 : pack.kind === 'used' ? t('overview.packUsed') : t('overview.fewLeft', { n: pack.left })}</div>}
           </section>
-          <section className="panel">
+          {coach && <section className="panel">
             <div className="panel-h"><h2>{t('profile.program')}</h2>
               <button className="btn ghost small" onClick={() => go('programs', { client: client.id })}><Dumbbell />{d.program ? t('profile.openProgram') : t('prog.create')}</button></div>
             <div className="meta">{d.program ? `${d.program.title} · ${t(d.program.program_days.length === 1 ? 'prog.dayCount1' : 'prog.dayCount', { n: d.program.program_days.length })}` : t('profile.noProgram')}</div>
-          </section>
+          </section>}
         </div>
       </div>
 
       <div className="grid two" style={{ marginTop: 14 }}>
-        <section className="panel" style={{ alignSelf: 'start' }}>
+        {coach && <section className="panel" style={{ alignSelf: 'start' }}>
           <div className="panel-h"><h2>{t('progress.title')}</h2></div>
           <Progress key={refresh} clientId={client.id} />
-        </section>
+        </section>}
         <section className="panel" style={{ alignSelf: 'start' }}>
           <div className="panel-h"><h2>{t('profile.upcoming')}</h2></div>
           <div className="list">
@@ -189,7 +190,7 @@ export default function ClientProfile({ client, data, trainerId, onBack, onEdit,
                   <span className="meta"> · {t(`kinds.${it.s.kind}`)}</span></div>
                 <div className="acts">
                   {it.s.status !== 'done' && <span className={`pill ${it.s.status === 'cancelled' ? 'mute' : 'warn'}`}>{t(`statuses.${it.s.status}`)}</span>}
-                  {['done', 'planned'].includes(it.s.status) && <button className="chip" onClick={() => setLogFor(it.s)}>{it.logs.length ? t('common.edit') : t('profile.log')}</button>}
+                  {coach && ['done', 'planned'].includes(it.s.status) && <button className="chip" onClick={() => setLogFor(it.s)}>{it.logs.length ? t('common.edit') : t('profile.log')}</button>}
                 </div>
               </div>
               {it.logs.length > 0

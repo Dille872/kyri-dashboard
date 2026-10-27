@@ -108,3 +108,23 @@ export function Duration({ w }) {
     <span className={off ? 'dur-off' : ''}>{txt}{w.planned_minutes ? ` (${t('overview.planned', { n: w.planned_minutes })})` : ''}</span>
   )
 }
+
+// Time as two dropdowns (hour 00–23, minute in 5-min steps). The browser's own time field shows
+// AM/PM in some languages (e.g. Greek "πμ/μμ") and is hard to change on a Mac – this always works.
+export function TimeSelect({ id, value, onChange }) {
+  const [h = '18', m = '00'] = String(value || '18:00').split(':')
+  const mins = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'))
+  if (!mins.includes(m)) mins.push(m)
+  mins.sort()
+  return (
+    <span className="time-select">
+      <select id={id} aria-label="hh" value={h} onChange={(e) => onChange(`${e.target.value}:${m}`)}>
+        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map((x) => <option key={x} value={x}>{x}</option>)}
+      </select>
+      <b>:</b>
+      <select aria-label="mm" value={m} onChange={(e) => onChange(`${h}:${e.target.value}`)}>
+        {mins.map((x) => <option key={x} value={x}>{x}</option>)}
+      </select>
+    </span>
+  )
+}

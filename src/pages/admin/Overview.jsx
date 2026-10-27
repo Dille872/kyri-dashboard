@@ -61,7 +61,9 @@ export default function Overview({ data, reload, go, trainerId }) {
   const packs = packStatuses(active, packSessions, trainer.reminder_days ?? 2)
   const ending = active.filter((c) => packs[c.id]?.remind || packs[c.id]?.kind === 'used')
   const lastIds = new Set(Object.values(packs).filter((p) => p.kind === 'last').map((p) => p.session.id))
-  const canLog = (s) => s.client_id && withProgram.has(s.client_id) && byId[s.client_id]?.mode !== 'online'
+  const coach = !!trainer.coaching_enabled
+  const canLog = (s) => coach && s.client_id && withProgram.has(s.client_id) && byId[s.client_id]?.mode !== 'online'
+  const openName = (s) => (coach ? setLogFor(s) : go('clients', { profile: s.client_id }))
 
   const todays = sessions.filter((s) => ymd(new Date(s.starts_at)) === today)
   const weekCount = sessions.filter((s) => s.client_id && ymd(new Date(s.starts_at)) >= monday && s.status !== 'cancelled').length
@@ -143,7 +145,7 @@ export default function Overview({ data, reload, go, trainerId }) {
                   <span className="time">{hm(new Date(s.starts_at))}</span>
                   <div style={{ minWidth: 0 }}>
                     {s.client_id
-                      ? <button className="name linkish" onClick={() => setLogFor(s)}>{byId[s.client_id]?.name}</button>
+                      ? <button className="name linkish" onClick={() => openName(s)}>{byId[s.client_id]?.name}</button>
                       : <div className="name">{s.notes || t('kinds.own')}</div>}
                     <div className="meta">{s.format === 'online' ? <span className="fmt"><Video />{t('formats.online')}</span> : t(`kinds.${s.kind}`)}{s.location ? ` · ${s.location}` : ''}
                       {canLog(s) && s.status === 'planned' ? ` · ${t('overview.tapToLog')}` : ''}</div>
@@ -160,7 +162,7 @@ export default function Overview({ data, reload, go, trainerId }) {
               <div className="list">
                 {past.map((s) => (
                   <div className="row" key={s.id}>
-                    <div><button className="name linkish" onClick={() => setLogFor(s)}>{byId[s.client_id]?.name}</button><div className="meta">{fmtRelative(s.starts_at, locale)} · {t(`kinds.${s.kind}`)}</div></div>
+                    <div><button className="name linkish" onClick={() => openName(s)}>{byId[s.client_id]?.name}</button><div className="meta">{fmtRelative(s.starts_at, locale)} · {t(`kinds.${s.kind}`)}</div></div>
                     <QuickActions s={s} />
                   </div>
                 ))}
@@ -209,6 +211,7 @@ export default function Overview({ data, reload, go, trainerId }) {
               </div>
             </>
           )}
+          {coach && (<>
           <div className="panel-h"><h2>{t('overview.online')}</h2>{feed.length > 0 && <span className="pill info">{feed.length}</span>}</div>
           <div className="list" style={{ marginBottom: 18 }}>
             {feed.length === 0 && <div className="empty">{t('overview.noOnline')}</div>}
@@ -224,6 +227,7 @@ export default function Overview({ data, reload, go, trainerId }) {
               </div>
             ))}
           </div>
+          </>)}
           {pending.length > 0 && (
             <>
               <div className="panel-h"><h2>{t('overview.confirmPayments')}</h2><span className="pill info">{pending.length}</span></div>

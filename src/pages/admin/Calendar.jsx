@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Video, Repeat, Dumbbell } from 'lucide-react'
 import { supabase } from '../../supabase.js'
 import { useI18n } from '../../i18n.jsx'
-import { Modal, useIsMobile, useRun, useToast } from '../../components/ui.jsx'
+import { Modal, useIsMobile, useRun, useToast, TimeSelect } from '../../components/ui.jsx'
 import ProgramLog from '../../components/ProgramLog.jsx'
 import { useProgramDays } from '../../lib/useProgramDays.js'
 import { addDays, fmtDate, hm, isoDow, isoWeek, money, mondayOf, toIso, weekdayName, ymd } from '../../lib/format.js'
@@ -74,7 +74,7 @@ export default function Calendar({ data, reload, trainerId, go }) {
           </div>
         </section>
         <button className="fab" onClick={() => setEdit({ isNew: true, date: day })} aria-label={t('calendar.newSession')}><Plus /></button>
-        <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId} go={go} progDays={progDays}
+        <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId} go={go} progDays={progDays} coach={!!data.trainer.coaching_enabled}
           onSaved={() => { setEdit(null); load(); reload() }} />
       </>
     )
@@ -129,13 +129,13 @@ export default function Calendar({ data, reload, trainerId, go }) {
         <span style={{ '--c': 'var(--warn)' }}><i />{t('calendar.paymentDue')}</span>
       </div>
 
-      <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId} go={go} progDays={progDays}
+      <SessionModal edit={edit} onClose={() => setEdit(null)} clients={data.clients} trainerId={trainerId} go={go} progDays={progDays} coach={!!data.trainer.coaching_enabled}
         onSaved={() => { setEdit(null); load(); reload() }} />
     </>
   )
 }
 
-function SessionModal({ edit, onClose, clients, trainerId, onSaved, go, progDays }) {
+function SessionModal({ edit, onClose, clients, trainerId, onSaved, go, progDays, coach }) {
   const { t, locale } = useI18n()
   const run = useRun()
   const toast = useToast()
@@ -234,7 +234,7 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved, go, progDays
         </div>
         <div className="row3">
           <label className="f" htmlFor="s-date">{t('calendar.date')}<input id="s-date" type="date" required value={f.date} onChange={set('date')} /></label>
-          <label className="f" htmlFor="s-time">{t('calendar.time')}<input id="s-time" type="time" required step="300" value={f.time} onChange={set('time')} /></label>
+          <label className="f" htmlFor="s-time">{t('calendar.time')}<TimeSelect id="s-time" value={f.time} onChange={(v) => setF({ ...f, time: v })} /></label>
           <label className="f" htmlFor="s-dur">{t('calendar.duration')}<input id="s-dur" type="number" min="5" max="600" step="5" value={f.duration_min} onChange={set('duration_min')} /></label>
         </div>
         <div className="row2">
@@ -248,7 +248,7 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved, go, progDays
             : <label className="f" htmlFor="s-loc">{t('calendar.location')}<input id="s-loc" value={f.location} onChange={set('location')} placeholder="Studio" /></label>}
         </div>
         {f.format === 'online' && <div className="meta" style={{ marginTop: -8 }}>{t('calendar.meetingHelp')}</div>}
-        {f.client_id && (progDays.byClient[f.client_id]?.length
+        {coach && f.client_id && (progDays.byClient[f.client_id]?.length
           ? <label className="f" htmlFor="s-day">{t('calendar.programDay')}
               <select id="s-day" value={f.program_day_id} onChange={set('program_day_id')}>
                 <option value="">{t('calendar.noDay')}</option>
@@ -285,7 +285,7 @@ function SessionModal({ edit, onClose, clients, trainerId, onSaved, go, progDays
             <div className="section">
               <div className="acts" style={{ justifyContent: 'space-between' }}>
                 <h2>{t('calendar.log')}</h2>
-                <button type="button" className="btn ghost small" onClick={() => setLogOpen(true)}><Dumbbell />{t('profile.log')}</button>
+                {coach && <button type="button" className="btn ghost small" onClick={() => setLogOpen(true)}><Dumbbell />{t('profile.log')}</button>}
               </div>
               <label className="f" htmlFor="s-private">{t('calendar.privateNote')}<textarea id="s-private" rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></label>
             </div>

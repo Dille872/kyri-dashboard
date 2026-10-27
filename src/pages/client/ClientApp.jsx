@@ -62,7 +62,7 @@ export default function ClientApp({ clientId, trainerId, signOut }) {
   const { trainer, client, upcoming, payments, packages, renewal, prep } = d
   const sessions = upcoming.slice(0, 5)
   // online clients always; Gym clients on the day of an online session (the server only sends a program then)
-  const online = (client.mode && client.mode !== 'gym') || !!prep
+  const online = !!trainer.coaching_enabled && ((client.mode && client.mode !== 'gym') || !!prep)
   const wa = whatsappUrl(trainer.phone)
   const cancelHours = trainer.cancel_hours ?? 24
   const isLate = (s) => new Date(s.starts_at).getTime() - Date.now() < cancelHours * 3600000

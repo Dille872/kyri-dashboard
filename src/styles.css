@@ -682,3 +682,8 @@ html{background:var(--bg)}
   input:not(.code),select,textarea{font-size:16px !important}
   .tabbar{background:var(--bg)}
 }
+
+/* v4.4 time as two dropdowns (24h) */
+.time-select{display:flex;align-items:center;gap:6px}
+.time-select select{flex:1;min-width:0;text-align:center}
+.time-select b{color:var(--muted)}

@@ -58,7 +58,9 @@ export default function AdminApp({ trainerId, user, signOut }) {
 
   if (!data) return <Spinner />
   const badge = (v) => v === 'payments' && data.pending.length > 0 && <span className="badge">{data.pending.length}</span>
-  const Page = PAGES[view]
+  const coach = !!data.trainer.coaching_enabled
+  const Page = !coach && view === 'programs' ? Overview : PAGES[view]
+  const side = coach ? SIDE : SIDE.filter((v) => v !== 'programs')
   const tabActive = (v) => view === v || (v === 'more' && ['programs', 'settings', 'more'].includes(view))
 
   if (mobile) return (
@@ -96,7 +98,7 @@ export default function AdminApp({ trainerId, user, signOut }) {
           <div><b><Wordmark trainer={data.trainer} /></b><small>{t('nav.coachDashboard')}</small></div>
         </button>
         <nav className="nav">
-          {SIDE.map((v) => {
+          {side.map((v) => {
             const Icon = ICONS[v]
             return (
               <button key={v} aria-current={view === v} onClick={() => go(v)}>
@@ -125,7 +127,7 @@ function More({ data, user, go, signOut }) {
   return (
     <div className="grid" style={{ gap: 14 }}>
       <section className="panel" style={{ padding: 6 }}>
-        {['programs', 'settings'].map((v) => {
+        {(data.trainer.coaching_enabled ? ['programs', 'settings'] : ['settings']).map((v) => {
           const Icon = ICONS[v]
           return (
             <button key={v} className="menu-row" onClick={() => go(v)}>

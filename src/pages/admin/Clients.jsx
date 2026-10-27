@@ -80,7 +80,7 @@ export default function Clients({ data, reload, trainerId, go }) {
                 <button key={c.id} className="row mrow" onClick={() => { setProfileId(c.id); window.scrollTo(0, 0) }}>
                   <div style={{ minWidth: 0, textAlign: 'left' }}>
                     <div className="name">{c.name}</div>
-                    <div className="meta">{t(`modes.${c.mode || 'gym'}`)} · {left == null ? t('clients.unlimited') : `${left}/${c.sessions_total}`} · {money(c.price, locale)}</div>
+                    <div className="meta">{data.trainer?.coaching_enabled ? `${t(`modes.${c.mode || 'gym'}`)} · ` : ''}{left == null ? t('clients.unlimited') : `${left}/${c.sessions_total}`} · {money(c.price, locale)}</div>
                     {!c.active && c.archived_at && <div className="meta">{t('clients.archivedOn', { date: fmtDate(ymd(new Date(c.archived_at)), locale) })}</div>}
                   </div>
                   <div className="stack-pills">{c.active && <span className={`pill ${p.cls}`}>{t(`payState.${p.key}`, { n: p.n, date: fmtDate(p.date, locale) })}</span>}{parqPill(c)}</div>
@@ -97,7 +97,7 @@ export default function Clients({ data, reload, trainerId, go }) {
                 return (
                   <tr key={c.id} className="click" onClick={() => { setProfileId(c.id); window.scrollTo(0, 0) }}>
                     <td><div className="name">{c.name}</div><div className="meta">{!c.active && c.archived_at ? t('clients.archivedOn', { date: fmtDate(ymd(new Date(c.archived_at)), locale) }) : c.email}</div></td>
-                    <td>{pkById[c.package_id]?.name || t('clients.noPackage')}<div className="meta">{t(`modes.${c.mode || 'gym'}`)} · {t(`billing.${c.billing}`)}</div></td>
+                    <td>{pkById[c.package_id]?.name || t('clients.noPackage')}<div className="meta">{data.trainer?.coaching_enabled ? `${t(`modes.${c.mode || 'gym'}`)} · ` : ''}{t(`billing.${c.billing}`)}</div></td>
                     <td className="num">{left == null ? t('clients.unlimited') : <>{left} / {c.sessions_total}<div className="bar"><i style={{ width: `${Math.min(100, (left / Math.max(c.sessions_total, 1)) * 100)}%` }} /></div></>}</td>
                     <td className="num">{money(c.price, locale)}</td>
                     <td>{c.active ? <span className={`pill ${p.cls}`}>{t(`payState.${p.key}`, { n: p.n, date: fmtDate(p.date, locale) })}</span> : <span className="pill mute">{t('clients.inactive')}</span>}</td>
@@ -167,11 +167,13 @@ function ClientModal({ edit, onClose, data, trainerId, onSaved, onInvite }) {
           <label className="f" htmlFor="c-lang">{t('clients.language')}
             <select id="c-lang" value={f.lang} onChange={set('lang')}>{LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}</select></label>
         </div>
+{data.trainer?.coaching_enabled && (
         <div className="row2">
           <label className="f" htmlFor="c-mode">{t('clients.mode')}
             <select id="c-mode" value={f.mode} onChange={set('mode')}>{['gym', 'online', 'hybrid'].map((m) => <option key={m} value={m}>{t(`modes.${m}`)}</option>)}</select></label>
           <span />
         </div>
+        )}
         <div className="row2">
           <label className="f" htmlFor="c-pkg">{t('clients.package')}
             <select id="c-pkg" value={f.package_id} onChange={pickPackage}>

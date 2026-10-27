@@ -18,6 +18,7 @@ export default function Settings({ data, reload, trainerId }) {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
   const [trc, setTrc] = useState(!!data.trainer.translate_comments)
   const [pwOpen, setPwOpen] = useState(false)
+  const [coach, setCoach] = useState(!!data.trainer.coaching_enabled)
 
   async function saveTrainer(e) {
     e.preventDefault()
@@ -26,6 +27,7 @@ export default function Settings({ data, reload, trainerId }) {
     row.default_lang = row.default_lang || 'en'
     if (row.cancel_hours == null) row.cancel_hours = 24
     row.translate_comments = trc
+    row.coaching_enabled = coach
     row.reminder_days = Math.min(Math.max(row.reminder_days ?? 2, 1), 14)
     const r = await run(supabase.from('trainers').update(row).eq('id', trainerId))
     if (r.ok) { toast(t('common.saved')); reload() }
@@ -77,6 +79,9 @@ export default function Settings({ data, reload, trainerId }) {
           <h2 style={{ marginTop: 10 }}>{t('privacy.title')}</h2>
           <label className="f" htmlFor="t-pmail">{t('privacy.contactEmail')}<input id="t-pmail" type="email" value={f.contact_email} onChange={set('contact_email')} placeholder="you@example.com" /></label>
           <label className="f" htmlFor="t-ptext">{t('privacy.privacyText')}<textarea id="t-ptext" rows={4} value={f.privacy_text} onChange={set('privacy_text')} /><small>{t('privacy.privacyHelp')}</small></label>
+          <h2 style={{ marginTop: 10 }}>{t('simple.title')}</h2>
+          <label className="check-row" htmlFor="t-coach" style={{ alignItems: 'flex-start' }}><input id="t-coach" type="checkbox" checked={coach} onChange={(e) => setCoach(e.target.checked)} style={{ marginTop: 2 }} />
+            <span><span style={{ fontWeight: 500 }}>{t('simple.coaching')}</span><small className="meta" style={{ display: 'block' }}>{t('simple.coachingHelp')}</small></span></label>
           <h2 style={{ marginTop: 10 }}>{t('tr.title')}</h2>
           <div className="meta" style={{ marginTop: -8 }}>{t('tr.help')}</div>
           <label className="check-row" htmlFor="t-trc" style={{ alignItems: 'flex-start' }}><input id="t-trc" type="checkbox" checked={trc} onChange={(e) => setTrc(e.target.checked)} style={{ marginTop: 2 }} />
